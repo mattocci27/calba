@@ -1,14 +1,12 @@
 Package: calba
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Calculate Basal Area for Trees
+Version: 0.1.0
 Authors@R:
-    person("Masatoshi", "Katabuchi", , "mattocci27@gmail..com", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0001-9900-9029"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
-Imports:
-    Rcpp
+    person("Masatoshi", "Katabuchi", email = "mattocci27@gmail.com", role = c("aut", "cre"))
+Description: A package to calculate basal area for trees.
+License: GPL-3
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+LazyData: true
+Imports: Rcpp
+LinkingTo: Rcpp
+Maintainer: Masatoshi Katabuchi <mattocci27@gmail.com>
