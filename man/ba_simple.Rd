@@ -4,37 +4,44 @@
 \alias{ba_simple}
 \title{Calculate Simple Basal Area}
 \usage{
-ba_simple(dbh, n_focal, r)
+ba_simple(data, n_focal, r)
 }
 \arguments{
-\item{dbh}{A numeric vector of tree diameters at breast height (DBH) in centimeters.}
+\item{data}{A data frame containing the tree data, including columns such as `latin` (species name), 
+`gx`, `gy` (coordinates), and `ba` (basal area).}
 
-\item{n_focal}{An integer specifying the number of focal trees to include in the calculation.
-This parameter limits the number of values from `dbh` that are used.}
+\item{n_focal}{An integer specifying the number of focal trees to include in the calculation.}
 
-\item{r}{A numeric scalar for the radius parameter. This parameter could represent a distance
-or scaling factor used in calculating the basal area (interpretation depends on context).}
+\item{r}{A numeric scalar for the radius parameter. This parameter represents the maximum distance 
+to consider when summing basal areas of neighboring trees.}
 }
 \value{
-A numeric vector representing the basal area for each specified tree in square centimeters.
-  The length of the output vector is equal to `n_focal`.
+A list with two numeric vectors:
+\describe{
+  \item{`con_ba`}{A numeric vector representing the cumulative basal area of conspecific trees within the radius.}
+  \item{`total_ba`}{A numeric vector representing the cumulative basal area of all trees (conspecific + heterospecific) within the radius.}
+}
 }
 \description{
-This function calculates the basal area for a given set of tree diameters at breast height (DBH),
-the number of focal trees, and a radius parameter.
+This function calculates the total basal area (conspecific + heterospecific) for a given set of tree data,
+focusing on the number of focal trees and a radius parameter. The basal area represents the cumulative 
+cross-sectional area of tree trunks adjusted for a simple decay model.
 }
 \details{
-The basal area is a measure commonly used in forestry and ecology to represent the cross-sectional
-area of a tree trunk at breast height, typically at 1.3 meters above the ground. The function
-uses a simple formula to calculate basal area for multiple trees.
-
-The formula used to calculate the basal area is based on the approximation:
-  \deqn{\text{basal area} = \pi \cdot \left(\frac{\text{dbh}}{2}\right)^2}
-  where DBH is the diameter at breast height.
+The function applies a simple decay model where the basal area contribution of each tree decreases
+  proportionally with its distance from the focal tree:
+  \deqn{\text{decayed basal area} = \frac{\text{ba}}{\text{dist}}}
+  where `dist` is the Euclidean distance from the focal tree to its neighbors.
 }
 \examples{
-# Calculate basal area for a set of DBH values
-sample_data <- data.frame(latin = sample(letters[1:4], 100, replace = TRUE), gx = runif(100), gy = runif(100), ba = runif(100, 10, 30))
-ba_simple( sample_data, n_focal = 10, r = 1.5)
+# Generate a sample dataset
+sample_data <- data.frame(
+  latin = sample(letters[1:4], 100, replace = TRUE),
+  gx = runif(100),
+  gy = runif(100),
+  ba = runif(100, 10, 30)
+)
+
+ba_simple(sample_data, n_focal = 10, r = 1.5)
 
 }
