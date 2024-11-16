@@ -10,3 +10,4 @@ LazyData: true
 Imports: Rcpp
 LinkingTo: Rcpp
 Maintainer: Masatoshi Katabuchi <mattocci27@gmail.com>
+RoxygenNote: 7.3.2

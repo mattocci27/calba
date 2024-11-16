@@ -7,10 +7,10 @@
 ba_decay(mu_values, data, n_focal, r)
 }
 \arguments{
-\item{mu_values}{A numeric vector of decay parameters. Each value in \code{mu_values} represents
+\item{mu_values}{A numeric vector of decay parameters. Each value in `mu_values` represents
 a decay factor used in calculating basal area for different focal trees.}
 
-\item{data}{A data frame containing the tree data, including columns such as \code{gx}, \code{gy}, and \code{ba}
+\item{data}{A data frame containing the tree data, including columns such as `gx`, `gy`, and `ba`
 for the x-coordinates, y-coordinates, and basal area of each tree.}
 
 \item{n_focal}{An integer specifying the number of focal trees to include in the calculation.}
@@ -21,8 +21,8 @@ the decay effect in the calculations.}
 \value{
 A list with two matrices:
 \describe{
-\item{\code{con_ba_matrix}}{A numeric matrix of basal areas with decay applied for conspecific (same species) trees.}
-\item{\code{het_ba_matrix}}{A numeric matrix of basal areas with decay applied for heterospecific (different species) trees.}
+  \item{`con_ba_matrix`}{A numeric matrix of basal areas with decay applied for conspecific (same species) trees.}
+  \item{`het_ba_matrix`}{A numeric matrix of basal areas with decay applied for heterospecific (different species) trees.}
 }
 }
 \description{
@@ -32,11 +32,11 @@ mixture model to handle multiple focal trees with specified decay.
 }
 \details{
 This function applies a decay model to adjust basal area values based on distance
-and species type. The compound Poisson-lognormal distribution mixture is used to handle
-zero-truncation, ensuring no zero basal area values.
+  and species type. The compound Poisson-lognormal distribution mixture is used to handle
+  zero-truncation, ensuring no zero basal area values.
 
-This is useful for ecological studies where the effect of tree proximity (distance-decay) and
-tree type (same vs. different species) are important for understanding basal area distribution.
+  This is useful for ecological studies where the effect of tree proximity (distance-decay) and
+  tree type (same vs. different species) are important for understanding basal area distribution.
 }
 \examples{
 # Generate a sample data frame
