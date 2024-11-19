@@ -11,36 +11,69 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // calculate_basal_area_decay
-List calculate_basal_area_decay(NumericVector mu_values, DataFrame data, int n_focal, double r);
-RcppExport SEXP _calba_calculate_basal_area_decay(SEXP mu_valuesSEXP, SEXP dataSEXP, SEXP n_focalSEXP, SEXP rSEXP) {
+List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r);
+RcppExport SEXP _calba_calculate_basal_area_decay(SEXP mu_valuesSEXP, SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type mu_values(mu_valuesSEXP);
-    Rcpp::traits::input_parameter< DataFrame >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< int >::type n_focal(n_focalSEXP);
+    Rcpp::traits::input_parameter< StringVector >::type sp(spSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gx(gxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ba(baSEXP);
     Rcpp::traits::input_parameter< double >::type r(rSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_decay(mu_values, data, n_focal, r));
+    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r));
     return rcpp_result_gen;
 END_RCPP
 }
 // calculate_basal_area_simple
-List calculate_basal_area_simple(DataFrame data, int n_focal, double r);
-RcppExport SEXP _calba_calculate_basal_area_simple(SEXP dataSEXP, SEXP n_focalSEXP, SEXP rSEXP) {
+List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r);
+RcppExport SEXP _calba_calculate_basal_area_simple(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< DataFrame >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< int >::type n_focal(n_focalSEXP);
+    Rcpp::traits::input_parameter< StringVector >::type sp(spSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gx(gxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ba(baSEXP);
     Rcpp::traits::input_parameter< double >::type r(rSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_simple(data, n_focal, r));
+    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_simple(sp, gx, gy, ba, r));
+    return rcpp_result_gen;
+END_RCPP
+}
+// count_total
+NumericVector count_total(NumericVector gx, NumericVector gy, double r);
+RcppExport SEXP _calba_count_total(SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type gx(gxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
+    Rcpp::traits::input_parameter< double >::type r(rSEXP);
+    rcpp_result_gen = Rcpp::wrap(count_total(gx, gy, r));
+    return rcpp_result_gen;
+END_RCPP
+}
+// count_con
+NumericVector count_con(StringVector sp, NumericVector gx, NumericVector gy, double r);
+RcppExport SEXP _calba_count_con(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< StringVector >::type sp(spSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gx(gxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
+    Rcpp::traits::input_parameter< double >::type r(rSEXP);
+    rcpp_result_gen = Rcpp::wrap(count_con(sp, gx, gy, r));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 4},
-    {"_calba_calculate_basal_area_simple", (DL_FUNC) &_calba_calculate_basal_area_simple, 3},
+    {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 6},
+    {"_calba_calculate_basal_area_simple", (DL_FUNC) &_calba_calculate_basal_area_simple, 5},
+    {"_calba_count_total", (DL_FUNC) &_calba_count_total, 3},
+    {"_calba_count_con", (DL_FUNC) &_calba_count_con, 4},
     {NULL, NULL, 0}
 };
 

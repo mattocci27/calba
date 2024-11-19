@@ -4,13 +4,16 @@
 \alias{ba_simple}
 \title{Calculate Simple Basal Area}
 \usage{
-ba_simple(data, n_focal, r)
+ba_simple(sp, gx, gy, ba, r)
 }
 \arguments{
-\item{data}{A data frame containing the tree data, including columns such as `latin` (species name), 
-`gx`, `gy` (coordinates), and `ba` (basal area).}
+\item{sp}{A character vector containing species names for each tree.}
 
-\item{n_focal}{An integer specifying the number of focal trees to include in the calculation.}
+\item{gx}{A numeric vector of x-coordinates for the trees.}
+
+\item{gy}{A numeric vector of y-coordinates for the trees.}
+
+\item{ba}{A numeric vector of basal area values for the trees.}
 
 \item{r}{A numeric scalar for the radius parameter. This parameter represents the maximum distance 
 to consider when summing basal areas of neighboring trees.}
@@ -41,7 +44,12 @@ sample_data <- data.frame(
   gy = runif(100),
   ba = runif(100, 10, 30)
 )
-
-ba_simple(sample_data, n_focal = 10, r = 1.5)
+ba_simple(
+  sp = sample_data$latin,
+  gx = sample_data$gx,
+  gy = sample_data$gy,
+  ba = sample_data$ba,
+  r = 1.5
+)
 
 }

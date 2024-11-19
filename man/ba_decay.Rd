@@ -4,16 +4,19 @@
 \alias{ba_decay}
 \title{Calculate Basal Area with Decay Function}
 \usage{
-ba_decay(mu_values, data, n_focal, r)
+ba_decay(mu_values, sp, gx, gy, ba, r)
 }
 \arguments{
 \item{mu_values}{A numeric vector of decay parameters. Each value in `mu_values` represents
 a decay factor that modifies how the basal area contribution diminishes with distance.}
 
-\item{data}{A data frame containing the tree data, including columns such as `latin` (species name), 
-`gx`, `gy` (coordinates), and `ba` (basal area).}
+\item{sp}{A character vector containing species names for each tree.}
 
-\item{n_focal}{An integer specifying the number of focal trees to include in the calculation.}
+\item{gx}{A numeric vector of x-coordinates for the trees.}
+
+\item{gy}{A numeric vector of y-coordinates for the trees.}
+
+\item{ba}{A numeric vector of basal area values for the trees.}
 
 \item{r}{A numeric scalar representing the radius to consider for neighboring trees.}
 }
@@ -47,6 +50,13 @@ sample_data <- data.frame(
   ba = runif(100, 10, 30)
 )
 mu_values <- c(1, 3, 5, 7)
-ba_decay(mu_values, sample_data, n_focal = 10, r = 1.5)
+ba_decay(
+  mu_values = mu_values,
+  sp = sample_data$latin,
+  gx = sample_data$gx,
+  gy = sample_data$gy,
+  ba = sample_data$ba,
+  r = 1.5
+)
 
 }
