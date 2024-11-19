@@ -41,22 +41,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// count_total
-NumericVector count_total(NumericVector gx, NumericVector gy, double r);
-RcppExport SEXP _calba_count_total(SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP) {
+// count_total_cpp
+NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r);
+RcppExport SEXP _calba_count_total_cpp(SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type gx(gxSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
     Rcpp::traits::input_parameter< double >::type r(rSEXP);
-    rcpp_result_gen = Rcpp::wrap(count_total(gx, gy, r));
+    rcpp_result_gen = Rcpp::wrap(count_total_cpp(gx, gy, r));
     return rcpp_result_gen;
 END_RCPP
 }
-// count_con
-NumericVector count_con(StringVector sp, NumericVector gx, NumericVector gy, double r);
-RcppExport SEXP _calba_count_con(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP) {
+// count_con_cpp
+NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r);
+RcppExport SEXP _calba_count_con_cpp(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -64,7 +64,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type gx(gxSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
     Rcpp::traits::input_parameter< double >::type r(rSEXP);
-    rcpp_result_gen = Rcpp::wrap(count_con(sp, gx, gy, r));
+    rcpp_result_gen = Rcpp::wrap(count_con_cpp(sp, gx, gy, r));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -72,8 +72,8 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 6},
     {"_calba_calculate_basal_area_simple", (DL_FUNC) &_calba_calculate_basal_area_simple, 5},
-    {"_calba_count_total", (DL_FUNC) &_calba_count_total, 3},
-    {"_calba_count_con", (DL_FUNC) &_calba_count_con, 4},
+    {"_calba_count_total_cpp", (DL_FUNC) &_calba_count_total_cpp, 3},
+    {"_calba_count_con_cpp", (DL_FUNC) &_calba_count_con_cpp, 4},
     {NULL, NULL, 0}
 };
 

@@ -99,7 +99,7 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
 }
 
 // [[Rcpp::export]]
-NumericVector count_total(NumericVector gx, NumericVector gy, double r) {
+NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r) {
   int n = gx.size();
   NumericVector res(n);
 
@@ -128,7 +128,7 @@ NumericVector count_total(NumericVector gx, NumericVector gy, double r) {
 }
 
 // [[Rcpp::export]]
-NumericVector count_con(StringVector sp, NumericVector gx, NumericVector gy, double r) {
+NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r) {
   int n = sp.size();
   NumericVector res(n);
 

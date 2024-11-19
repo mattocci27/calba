@@ -9,11 +9,11 @@ calculate_basal_area_simple <- function(sp, gx, gy, ba, r) {
     .Call(`_calba_calculate_basal_area_simple`, sp, gx, gy, ba, r)
 }
 
-count_total <- function(gx, gy, r) {
-    .Call(`_calba_count_total`, gx, gy, r)
+count_total_cpp <- function(gx, gy, r) {
+    .Call(`_calba_count_total_cpp`, gx, gy, r)
 }
 
-count_con <- function(sp, gx, gy, r) {
-    .Call(`_calba_count_con`, sp, gx, gy, r)
+count_con_cpp <- function(sp, gx, gy, r) {
+    .Call(`_calba_count_con_cpp`, sp, gx, gy, r)
 }
 
