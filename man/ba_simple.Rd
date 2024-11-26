@@ -9,14 +9,14 @@ ba_simple(sp, gx, gy, ba, r, dist_weighted = FALSE)
 \arguments{
 \item{sp}{A character vector containing species names for each tree.}
 
-\item{gx}{A numeric vector of x-coordinates for the trees.}
+\item{gx}{A numeric vector of x-coordinates for the trees (e.g., 0 to 10 for realistic spatial data).}
 
-\item{gy}{A numeric vector of y-coordinates for the trees.}
+\item{gy}{A numeric vector of y-coordinates for the trees (e.g., 0 to 10 for realistic spatial data).}
 
-\item{ba}{A numeric vector of basal area values for the trees.}
+\item{ba}{A numeric vector of basal area values for the trees (e.g., cross-sectional area at breast height).}
 
 \item{r}{A numeric scalar for the radius parameter. This parameter represents the maximum distance
-to consider when summing basal areas of neighboring trees.}
+to consider when summing basal areas of neighboring trees (e.g., 1–5 units for spatially distributed data).}
 
 \item{dist_weighted}{Logical. If `TRUE`, use the distance-weighted approach (`ba / dist`);
 if `FALSE`, use the unadjusted `ba`.}
@@ -40,19 +40,32 @@ The function either:
 }
 \examples{
 # Generate a sample dataset
+set.seed(42)  # For reproducibility
 sample_data <- data.frame(
   latin = sample(letters[1:4], 100, replace = TRUE),
-  gx = runif(100),
-  gy = runif(100),
-  ba = runif(100, 10, 30)
+  gx = runif(100, 0, 10),  # Spatial coordinates between 0 and 10
+  gy = runif(100, 0, 10),
+  ba = runif(100, 10, 30)  # Basal area between 10 and 30
 )
+
+# Calculate with distance weighting
 ba_simple(
   sp = sample_data$latin,
   gx = sample_data$gx,
   gy = sample_data$gy,
   ba = sample_data$ba,
-  r = 1.5,
+  r = 3,  # Radius within the spatial scale
   dist_weighted = TRUE
+)
+
+# Calculate without distance weighting
+ba_simple(
+  sp = sample_data$latin,
+  gx = sample_data$gx,
+  gy = sample_data$gy,
+  ba = sample_data$ba,
+  r = 3,
+  dist_weighted = FALSE
 )
 
 }

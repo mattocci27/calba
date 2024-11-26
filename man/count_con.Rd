@@ -24,14 +24,14 @@ This function counts the number of conspecific trees within a given radius for e
 \examples{
 sample_data <- data.frame(
   latin = sample(letters[1:4], 100, replace = TRUE),
-  gx = runif(100),
-  gy = runif(100)
+  gx = runif(100, 0, 10),
+  gy = runif(100, 0, 10)
 )
 count_con(
   sp = sample_data$latin,
   gx = sample_data$gx,
   gy = sample_data$gy,
-  r = 1.5
+  r = 3
 )
 
 }

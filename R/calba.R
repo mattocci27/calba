@@ -5,11 +5,11 @@
 #' cross-sectional area of tree trunks, either unadjusted or adjusted for a simple distance-weighted decay model.
 #'
 #' @param sp A character vector containing species names for each tree.
-#' @param gx A numeric vector of x-coordinates for the trees.
-#' @param gy A numeric vector of y-coordinates for the trees.
-#' @param ba A numeric vector of basal area values for the trees.
+#' @param gx A numeric vector of x-coordinates for the trees (e.g., 0 to 10 for realistic spatial data).
+#' @param gy A numeric vector of y-coordinates for the trees (e.g., 0 to 10 for realistic spatial data).
+#' @param ba A numeric vector of basal area values for the trees (e.g., cross-sectional area at breast height).
 #' @param r A numeric scalar for the radius parameter. This parameter represents the maximum distance
-#'   to consider when summing basal areas of neighboring trees.
+#'   to consider when summing basal areas of neighboring trees (e.g., 1–5 units for spatially distributed data).
 #' @param dist_weighted Logical. If `TRUE`, use the distance-weighted approach (`ba / dist`);
 #'   if `FALSE`, use the unadjusted `ba`.
 #'
@@ -25,19 +25,32 @@
 #'
 #' @examples
 #' # Generate a sample dataset
+#' set.seed(42)  # For reproducibility
 #' sample_data <- data.frame(
 #'   latin = sample(letters[1:4], 100, replace = TRUE),
-#'   gx = runif(100),
-#'   gy = runif(100),
-#'   ba = runif(100, 10, 30)
+#'   gx = runif(100, 0, 10),  # Spatial coordinates between 0 and 10
+#'   gy = runif(100, 0, 10),
+#'   ba = runif(100, 10, 30)  # Basal area between 10 and 30
 #' )
+#'
+#' # Calculate with distance weighting
 #' ba_simple(
 #'   sp = sample_data$latin,
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
 #'   ba = sample_data$ba,
-#'   r = 1.5,
+#'   r = 3,  # Radius within the spatial scale
 #'   dist_weighted = TRUE
+#' )
+#'
+#' # Calculate without distance weighting
+#' ba_simple(
+#'   sp = sample_data$latin,
+#'   gx = sample_data$gx,
+#'   gy = sample_data$gy,
+#'   ba = sample_data$ba,
+#'   r = 3,
+#'   dist_weighted = FALSE
 #' )
 #'
 #' @useDynLib calba, .registration = TRUE
@@ -72,15 +85,13 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
 #'   where `mu` is the decay parameter, `ba` is the basal area, and `dist` is the Euclidean distance
 #'   between trees.
 #'
-#'   This approach allows the analysis of how tree proximity (distance-decay) and species identity
-#'   affect the distribution of basal area in an ecological setting.
-#'
 #' @examples
 #' # Generate a sample dataset
+#' set.seed(42)
 #' sample_data <- data.frame(
 #'   latin = sample(letters[1:4], 100, replace = TRUE),
-#'   gx = runif(100),
-#'   gy = runif(100),
+#'   gx = runif(100, 0, 10),
+#'   gy = runif(100, 0, 10),
 #'   ba = runif(100, 10, 30)
 #' )
 #' mu_values <- c(1, 3, 5, 7)
@@ -90,7 +101,7 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
 #'   ba = sample_data$ba,
-#'   r = 1.5
+#'   r = 3
 #' )
 #'
 #' @export
@@ -112,14 +123,14 @@ ba_decay <- function(mu_values, sp, gx, gy, ba, r) {
 #' @examples
 #' sample_data <- data.frame(
 #'   latin = sample(letters[1:4], 100, replace = TRUE),
-#'   gx = runif(100),
-#'   gy = runif(100)
+#'   gx = runif(100, 0, 10),
+#'   gy = runif(100, 0, 10)
 #' )
 #' count_con(
 #'   sp = sample_data$latin,
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
-#'   r = 1.5
+#'   r = 3
 #' )
 #'
 #' @export
@@ -139,13 +150,13 @@ count_con <- function(sp, gx, gy, r) {
 #'
 #' @examples
 #' sample_data <- data.frame(
-#'   gx = runif(100),
-#'   gy = runif(100)
+#'   gx = runif(100, 0, 10),
+#'   gy = runif(100, 0, 10)
 #' )
 #' count_total(
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
-#'   r = 1.5
+#'   r = 3
 #' )
 #'
 #' @export

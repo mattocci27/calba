@@ -37,16 +37,14 @@ The function applies an exponential decay model where the basal area contributio
   \deqn{\text{decayed basal area} = \text{ba} \cdot \exp\left(-\frac{\text{dist}}{\mu}\right)}
   where `mu` is the decay parameter, `ba` is the basal area, and `dist` is the Euclidean distance
   between trees.
-
-  This approach allows the analysis of how tree proximity (distance-decay) and species identity
-  affect the distribution of basal area in an ecological setting.
 }
 \examples{
 # Generate a sample dataset
+set.seed(42)
 sample_data <- data.frame(
   latin = sample(letters[1:4], 100, replace = TRUE),
-  gx = runif(100),
-  gy = runif(100),
+  gx = runif(100, 0, 10),
+  gy = runif(100, 0, 10),
   ba = runif(100, 10, 30)
 )
 mu_values <- c(1, 3, 5, 7)
@@ -56,7 +54,7 @@ ba_decay(
   gx = sample_data$gx,
   gy = sample_data$gy,
   ba = sample_data$ba,
-  r = 1.5
+  r = 3
 )
 
 }

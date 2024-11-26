@@ -21,13 +21,13 @@ This function counts the total number of trees within a given radius for each fo
 }
 \examples{
 sample_data <- data.frame(
-  gx = runif(100),
-  gy = runif(100)
+  gx = runif(100, 0, 10),
+  gy = runif(100, 0, 10)
 )
 count_total(
   gx = sample_data$gx,
   gy = sample_data$gy,
-  r = 1.5
+  r = 3
 )
 
 }
