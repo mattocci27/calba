@@ -6,7 +6,8 @@ using namespace Rcpp;
 template <typename DecayFunc>
 void process_focal_tree_trimmed(int i, const StringVector& sp, const NumericVector& gx,
                                 const NumericVector& gy, const NumericVector& ba, double r,
-                                DecayFunc decay_func, NumericVector& con_ba, NumericVector& total_ba) {
+                                DecayFunc decay_func, bool dist_weighted,
+                                NumericVector& con_ba, NumericVector& total_ba) {
   String target_sp = sp[i];
   double con_ba_sum = 0.0;
   double total_ba_sum = 0.0;
@@ -26,7 +27,13 @@ void process_focal_tree_trimmed(int i, const StringVector& sp, const NumericVect
     // Compute actual distance
     double dist = std::sqrt(dx * dx + dy * dy);
     if (dist > 0 && dist <= r) {
-      double ba_decay = decay_func(ba[j], dist);
+      double ba_decay;
+
+      if (dist_weighted) {
+        ba_decay = ba[j] / dist; // Use distance-weighted calculation
+      } else {
+        ba_decay = decay_func(ba[j], dist); // Use decay function
+      }
 
       total_ba_sum += ba_decay; // Add to total basal area
       if (sp[j] == target_sp) {
@@ -37,6 +44,29 @@ void process_focal_tree_trimmed(int i, const StringVector& sp, const NumericVect
 
   con_ba[i] = con_ba_sum;
   total_ba[i] = total_ba_sum;
+}
+
+// [[Rcpp::export]]
+List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy,
+                                 NumericVector ba, double r, bool dist_weighted = false) {
+  int n_focal = gx.size();
+  NumericVector con_ba(n_focal, 0.0);
+  NumericVector total_ba(n_focal, 0.0);
+
+  // Decay function for simple decay (ba / dist)
+  auto decay_func = [](double ba_j, double dist) {
+    return ba_j; // This decay_func is effectively bypassed for distance weighting
+  };
+
+  // Iterate over focal trees
+  for (int i = 0; i < n_focal; i++) {
+    process_focal_tree_trimmed(i, sp, gx, gy, ba, r, decay_func, dist_weighted, con_ba, total_ba);
+  }
+
+  return List::create(
+    Named("con_ba") = con_ba,
+    Named("total_ba") = total_ba
+  );
 }
 
 // [[Rcpp::export]]
@@ -61,7 +91,7 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
 
     // Iterate over focal trees
     for (int i = 0; i < n_focal; i++) {
-      process_focal_tree_trimmed(i, sp, gx, gy, ba, r, decay_func, con_ba, total_ba);
+      process_focal_tree_trimmed(i, sp, gx, gy, ba, r, decay_func, false, con_ba, total_ba);
     }
 
     // Store results for this mu
@@ -72,29 +102,6 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
   return List::create(
     Named("con_ba_matrix") = con_ba_matrix,
     Named("total_ba_matrix") = total_ba_matrix
-  );
-}
-
-// [[Rcpp::export]]
-List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy,
-                                 NumericVector ba, double r) {
-  int n_focal = gx.size();
-  NumericVector con_ba(n_focal, 0.0);
-  NumericVector total_ba(n_focal, 0.0);
-
-  // Decay function for simple decay (ba / dist)
-  auto decay_func = [](double ba_j, double dist) {
-    return ba_j / dist;
-  };
-
-  // Iterate over focal trees
-  for (int i = 0; i < n_focal; i++) {
-    process_focal_tree_trimmed(i, sp, gx, gy, ba, r, decay_func, con_ba, total_ba);
-  }
-
-  return List::create(
-    Named("con_ba") = con_ba,
-    Named("total_ba") = total_ba
   );
 }
 

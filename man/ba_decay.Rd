@@ -35,10 +35,10 @@ based on distance and species identity for each tree within a given radius.
 The function applies an exponential decay model where the basal area contribution
   diminishes with distance from the focal tree:
   \deqn{\text{decayed basal area} = \text{ba} \cdot \exp\left(-\frac{\text{dist}}{\mu}\right)}
-  where `mu` is the decay parameter, `ba` is the basal area, and `dist` is the Euclidean distance 
+  where `mu` is the decay parameter, `ba` is the basal area, and `dist` is the Euclidean distance
   between trees.
 
-  This approach allows the analysis of how tree proximity (distance-decay) and species identity 
+  This approach allows the analysis of how tree proximity (distance-decay) and species identity
   affect the distribution of basal area in an ecological setting.
 }
 \examples{

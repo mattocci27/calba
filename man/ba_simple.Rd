@@ -4,7 +4,7 @@
 \alias{ba_simple}
 \title{Calculate Simple Basal Area}
 \usage{
-ba_simple(sp, gx, gy, ba, r)
+ba_simple(sp, gx, gy, ba, r, dist_weighted = FALSE)
 }
 \arguments{
 \item{sp}{A character vector containing species names for each tree.}
@@ -15,8 +15,11 @@ ba_simple(sp, gx, gy, ba, r)
 
 \item{ba}{A numeric vector of basal area values for the trees.}
 
-\item{r}{A numeric scalar for the radius parameter. This parameter represents the maximum distance 
+\item{r}{A numeric scalar for the radius parameter. This parameter represents the maximum distance
 to consider when summing basal areas of neighboring trees.}
+
+\item{dist_weighted}{Logical. If `TRUE`, use the distance-weighted approach (`ba / dist`);
+if `FALSE`, use the unadjusted `ba`.}
 }
 \value{
 A list with two numeric vectors:
@@ -27,14 +30,13 @@ A list with two numeric vectors:
 }
 \description{
 This function calculates the total basal area (conspecific + heterospecific) for a given set of tree data,
-focusing on the number of focal trees and a radius parameter. The basal area represents the cumulative 
-cross-sectional area of tree trunks adjusted for a simple decay model.
+focusing on the number of focal trees and a radius parameter. The basal area represents the cumulative
+cross-sectional area of tree trunks, either unadjusted or adjusted for a simple distance-weighted decay model.
 }
 \details{
-The function applies a simple decay model where the basal area contribution of each tree decreases
-  proportionally with its distance from the focal tree:
-  \deqn{\text{decayed basal area} = \frac{\text{ba}}{\text{dist}}}
-  where `dist` is the Euclidean distance from the focal tree to its neighbors.
+The function either:
+  - Calculates the unadjusted basal area if `dist_weighted = FALSE`.
+  - Applies a simple distance-weighted approach (`ba / dist`) if `dist_weighted = TRUE`.
 }
 \examples{
 # Generate a sample dataset
@@ -49,7 +51,8 @@ ba_simple(
   gx = sample_data$gx,
   gy = sample_data$gy,
   ba = sample_data$ba,
-  r = 1.5
+  r = 1.5,
+  dist_weighted = TRUE
 )
 
 }

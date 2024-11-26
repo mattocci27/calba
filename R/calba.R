@@ -1,15 +1,17 @@
 #' Calculate Simple Basal Area
 #'
 #' This function calculates the total basal area (conspecific + heterospecific) for a given set of tree data,
-#' focusing on the number of focal trees and a radius parameter. The basal area represents the cumulative 
-#' cross-sectional area of tree trunks adjusted for a simple decay model.
+#' focusing on the number of focal trees and a radius parameter. The basal area represents the cumulative
+#' cross-sectional area of tree trunks, either unadjusted or adjusted for a simple distance-weighted decay model.
 #'
 #' @param sp A character vector containing species names for each tree.
 #' @param gx A numeric vector of x-coordinates for the trees.
 #' @param gy A numeric vector of y-coordinates for the trees.
 #' @param ba A numeric vector of basal area values for the trees.
-#' @param r A numeric scalar for the radius parameter. This parameter represents the maximum distance 
+#' @param r A numeric scalar for the radius parameter. This parameter represents the maximum distance
 #'   to consider when summing basal areas of neighboring trees.
+#' @param dist_weighted Logical. If `TRUE`, use the distance-weighted approach (`ba / dist`);
+#'   if `FALSE`, use the unadjusted `ba`.
 #'
 #' @return A list with two numeric vectors:
 #' \describe{
@@ -17,10 +19,9 @@
 #'   \item{`total_ba`}{A numeric vector representing the cumulative basal area of all trees (conspecific + heterospecific) within the radius.}
 #' }
 #'
-#' @details The function applies a simple decay model where the basal area contribution of each tree decreases
-#'   proportionally with its distance from the focal tree:
-#'   \deqn{\text{decayed basal area} = \frac{\text{ba}}{\text{dist}}}
-#'   where `dist` is the Euclidean distance from the focal tree to its neighbors.
+#' @details The function either:
+#'   - Calculates the unadjusted basal area if `dist_weighted = FALSE`.
+#'   - Applies a simple distance-weighted approach (`ba / dist`) if `dist_weighted = TRUE`.
 #'
 #' @examples
 #' # Generate a sample dataset
@@ -35,14 +36,13 @@
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
 #'   ba = sample_data$ba,
-#'   r = 1.5
+#'   r = 1.5,
+#'   dist_weighted = TRUE
 #' )
 #'
-#' @useDynLib calba, .registration = TRUE
-#' @import Rcpp
 #' @export
-ba_simple <- function(sp, gx, gy, ba, r) {
-  calculate_basal_area_simple(sp, gx, gy, ba, r)
+ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
+  calculate_basal_area_simple(sp, gx, gy, ba, r, dist_weighted)
 }
 
 #' Calculate Basal Area with Decay Function
@@ -67,10 +67,10 @@ ba_simple <- function(sp, gx, gy, ba, r) {
 #' @details The function applies an exponential decay model where the basal area contribution
 #'   diminishes with distance from the focal tree:
 #'   \deqn{\text{decayed basal area} = \text{ba} \cdot \exp\left(-\frac{\text{dist}}{\mu}\right)}
-#'   where `mu` is the decay parameter, `ba` is the basal area, and `dist` is the Euclidean distance 
+#'   where `mu` is the decay parameter, `ba` is the basal area, and `dist` is the Euclidean distance
 #'   between trees.
 #'
-#'   This approach allows the analysis of how tree proximity (distance-decay) and species identity 
+#'   This approach allows the analysis of how tree proximity (distance-decay) and species identity
 #'   affect the distribution of basal area in an ecological setting.
 #'
 #' @examples
