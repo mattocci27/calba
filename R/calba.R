@@ -40,6 +40,8 @@
 #'   dist_weighted = TRUE
 #' )
 #'
+#' @useDynLib calba, .registration = TRUE
+#' @import Rcpp
 #' @export
 ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
   calculate_basal_area_simple(sp, gx, gy, ba, r, dist_weighted)
