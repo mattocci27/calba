@@ -69,7 +69,7 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
 
 // [[Rcpp::export]]
 List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx,
-                                NumericVector gy, NumericVector ba, double r) {
+                                NumericVector gy, NumericVector ba, double r, std::string decay_type) {
   int n_focal = gx.size();
   int n_mu = mu_values.size();
   NumericMatrix con_ba_matrix(n_focal, n_mu);
@@ -79,8 +79,14 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
     double mu = mu_values[m];
 
     // Decay function for exponential decay
-    auto decay_func = [mu](double ba_j, double dist) {
-      return ba_j * exp(-dist / mu);
+    auto decay_func = [mu, decay_type](double ba_j, double dist) {
+      if (decay_type == "exponential") {
+        return ba_j * exp(-dist / mu);
+      } else if (decay_type == "exponential-normal") {
+        return ba_j * exp(-dist * dist / (mu * mu));
+      } else {
+        Rcpp::stop("Unknown decay type");
+      }
     };
 
     // Temporary vectors to store results for the current mu

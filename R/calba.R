@@ -72,6 +72,8 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
 #' @param gy A numeric vector of y-coordinates for the trees.
 #' @param ba A numeric vector of basal area values for the trees.
 #' @param r A numeric scalar representing the radius to consider for neighboring trees.
+#' @param exponential_normal A logical value. If `FALSE` (default), use exponential decay. 
+#' If `TRUE`, use exponential-normal decay.
 #'
 #' @return A list with two matrices:
 #' \describe{
@@ -101,12 +103,14 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
 #'   ba = sample_data$ba,
-#'   r = 3
+#'   r = 3,
+#'   exponential_normal = FALSE 
 #' )
 #'
 #' @export
-ba_decay <- function(mu_values, sp, gx, gy, ba, r) {
-  calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r)
+ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE) {
+  decay_type <- if (exponential_normal) "exponential-normal" else "exponential"
+  calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r, decay_type)
 }
 
 #' Count Conspecific Trees

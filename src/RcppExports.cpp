@@ -27,8 +27,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // calculate_basal_area_decay
-List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r);
-RcppExport SEXP _calba_calculate_basal_area_decay(SEXP mu_valuesSEXP, SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP) {
+List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r, std::string decay_type);
+RcppExport SEXP _calba_calculate_basal_area_decay(SEXP mu_valuesSEXP, SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP, SEXP decay_typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -38,7 +38,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
     Rcpp::traits::input_parameter< NumericVector >::type ba(baSEXP);
     Rcpp::traits::input_parameter< double >::type r(rSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r));
+    Rcpp::traits::input_parameter< std::string >::type decay_type(decay_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r, decay_type));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -72,7 +73,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_calba_calculate_basal_area_simple", (DL_FUNC) &_calba_calculate_basal_area_simple, 6},
-    {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 6},
+    {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 7},
     {"_calba_count_total_cpp", (DL_FUNC) &_calba_count_total_cpp, 3},
     {"_calba_count_con_cpp", (DL_FUNC) &_calba_count_con_cpp, 4},
     {NULL, NULL, 0}

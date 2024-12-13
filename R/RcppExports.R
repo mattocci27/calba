@@ -5,8 +5,8 @@ calculate_basal_area_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE
     .Call(`_calba_calculate_basal_area_simple`, sp, gx, gy, ba, r, dist_weighted)
 }
 
-calculate_basal_area_decay <- function(mu_values, sp, gx, gy, ba, r) {
-    .Call(`_calba_calculate_basal_area_decay`, mu_values, sp, gx, gy, ba, r)
+calculate_basal_area_decay <- function(mu_values, sp, gx, gy, ba, r, decay_type) {
+    .Call(`_calba_calculate_basal_area_decay`, mu_values, sp, gx, gy, ba, r, decay_type)
 }
 
 count_total_cpp <- function(gx, gy, r) {
