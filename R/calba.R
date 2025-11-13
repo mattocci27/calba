@@ -76,7 +76,7 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
 #' @param gy A numeric vector of y-coordinates for the trees.
 #' @param ba A numeric vector of basal area values for the trees.
 #' @param r A numeric scalar representing the radius to consider for neighboring trees.
-#' @param exponential_normal A logical value. If `FALSE` (default), use exponential decay. 
+#' @param exponential_normal A logical value. If `FALSE` (default), use exponential decay.
 #' If `TRUE`, use exponential-normal decay.
 #'
 #' @return A list with two matrices:
@@ -108,7 +108,7 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
 #'   gy = sample_data$gy,
 #'   ba = sample_data$ba,
 #'   r = 3,
-#'   exponential_normal = FALSE 
+#'   exponential_normal = FALSE
 #' )
 #'
 #' @export
@@ -325,21 +325,6 @@ neigh_multi_r <- function(sp, gx, gy, ba, r_values, dist_weighted = FALSE) {
   df
 }
 
-#' Derived neighborhood metrics
-#'
-#' Expand a neighborhood summary with heterospecific totals, proportions, and a
-#' simple competition index.
-#'
-#' @param summary_tbl A data frame produced by `neigh_ba()` or a similar
-#'   structure containing `con_ba`, `total_ba`, `con_count`, and `total_count`.
-#'
-#' @return The same data frame augmented with:
-#' * `prop_con_ba` – proportion of basal area contributed by conspecifics,
-#' * `het_ba` – heterospecific basal area,
-#' * `het_count` – heterospecific neighbor count,
-#' * `competition_index` – simple competition index (total basal area per neighbor).
-#'
-#' @export
 add_derived_neighborhood_metrics <- function(summary_tbl) {
   required <- c("con_ba", "total_ba", "con_count", "total_count")
   if (!all(required %in% names(summary_tbl))) {

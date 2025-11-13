@@ -20,7 +20,7 @@ a decay factor that modifies how the basal area contribution diminishes with dis
 
 \item{r}{A numeric scalar representing the radius to consider for neighboring trees.}
 
-\item{exponential_normal}{A logical value. If `FALSE` (default), use exponential decay. 
+\item{exponential_normal}{A logical value. If `FALSE` (default), use exponential decay.
 If `TRUE`, use exponential-normal decay.}
 }
 \value{
@@ -58,7 +58,7 @@ ba_decay(
   gy = sample_data$gy,
   ba = sample_data$ba,
   r = 3,
-  exponential_normal = FALSE 
+  exponential_normal = FALSE
 )
 
 }
