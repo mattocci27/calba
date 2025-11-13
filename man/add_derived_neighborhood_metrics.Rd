@@ -7,7 +7,7 @@
 add_derived_neighborhood_metrics(summary_tbl)
 }
 \arguments{
-\item{summary_tbl}{A data frame produced by `neighborhood_ba()` or a similar
+\item{summary_tbl}{A data frame produced by `neigh_ba()` or a similar
 structure containing `con_ba`, `total_ba`, `con_count`, and `total_count`.}
 }
 \value{

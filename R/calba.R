@@ -199,7 +199,7 @@ count_total <- function(gx, gy, r) {
 #' @return A list with
 #' * `summary`: data frame with `tree_id`, `species`, `con_ba`, `total_ba`, `con_count`, `total_count`.
 #' * `decay`: (`NULL` or) long data frame with `tree_id`, `species`, `mu`, `con_ba`, `total_ba`.
-#' 
+#'
 #' The `summary` component also includes derived columns:
 #' `prop_con_ba`, `het_ba`, `het_count`, and `competition_index`.
 #' @examples
@@ -209,7 +209,7 @@ count_total <- function(gx, gy, r) {
 #'   gy = runif(10, 0, 10),
 #'   ba = runif(10, 10, 30)
 #' )
-#' neighborhood_ba(
+#' neigh_ba(
 #'   sp = sample_data$latin,
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
@@ -217,11 +217,13 @@ count_total <- function(gx, gy, r) {
 #'   r = 3,
 #'   mu_values = c(1, 3)
 #' )
+#' @name neigh_ba
+#' @rdname neigh_ba
 #' @export
-neighborhood_ba <- function(sp, gx, gy, ba, r,
-                            mu_values = NULL,
-                            dist_weighted = FALSE,
-                            exponential_normal = FALSE) {
+neigh_ba <- function(sp, gx, gy, ba, r,
+                     mu_values = NULL,
+                     dist_weighted = FALSE,
+                     exponential_normal = FALSE) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
@@ -284,7 +286,7 @@ neighborhood_ba <- function(sp, gx, gy, ba, r,
 #'   gy = runif(10, 0, 10),
 #'   ba = runif(10, 10, 30)
 #' )
-#' neighborhood_multi_radius(
+#' neigh_multi_r(
 #'   sp = sample_data$latin,
 #'   gx = sample_data$gx,
 #'   gy = sample_data$gy,
@@ -292,8 +294,10 @@ neighborhood_ba <- function(sp, gx, gy, ba, r,
 #'   r_values = c(3, 5)
 #' )
 #'
+#' @name neigh_multi_r
+#' @rdname neigh_multi_r
 #' @export
-neighborhood_multi_radius <- function(sp, gx, gy, ba, r_values, dist_weighted = FALSE) {
+neigh_multi_r <- function(sp, gx, gy, ba, r_values, dist_weighted = FALSE) {
   r_values <- validate_r_values(r_values)
   max_r <- max(r_values)
 
@@ -326,7 +330,7 @@ neighborhood_multi_radius <- function(sp, gx, gy, ba, r_values, dist_weighted = 
 #' Expand a neighborhood summary with heterospecific totals, proportions, and a
 #' simple competition index.
 #'
-#' @param summary_tbl A data frame produced by `neighborhood_ba()` or a similar
+#' @param summary_tbl A data frame produced by `neigh_ba()` or a similar
 #'   structure containing `con_ba`, `total_ba`, `con_count`, and `total_count`.
 #'
 #' @return The same data frame augmented with:

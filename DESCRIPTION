@@ -4,10 +4,11 @@ Version: 0.1.0
 Authors@R:
     person("Masatoshi", "Katabuchi", email = "mattocci27@gmail.com", role = c("aut", "cre"))
 Description: A package to calculate basal area for trees.
-License: GPL-3
+License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: Rcpp
+Suggests: testthat (>= 3.1.0)
 LinkingTo: Rcpp
 Maintainer: Masatoshi Katabuchi <mattocci27@gmail.com>
 RoxygenNote: 7.3.2
