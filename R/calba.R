@@ -57,6 +57,10 @@
 #' @import Rcpp
 #' @export
 ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
+  validate_xy(gx, gy, r)
+  sp <- validate_species(sp, length(gx))
+  ba <- validate_ba(ba, length(gx))
+
   calculate_basal_area_simple(sp, gx, gy, ba, r, dist_weighted)
 }
 
@@ -109,6 +113,11 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
 #'
 #' @export
 ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE) {
+  validate_xy(gx, gy, r)
+  sp <- validate_species(sp, length(gx))
+  ba <- validate_ba(ba, length(gx))
+  mu_values <- validate_mu_values(mu_values)
+
   decay_type <- if (exponential_normal) "exponential-normal" else "exponential"
   calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r, decay_type)
 }
@@ -139,6 +148,9 @@ ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE) {
 #'
 #' @export
 count_con <- function(sp, gx, gy, r) {
+  validate_xy(gx, gy, r)
+  sp <- validate_species(sp, length(gx))
+
   count_con_cpp(sp, gx, gy, r)
 }
 
@@ -165,5 +177,181 @@ count_con <- function(sp, gx, gy, r) {
 #'
 #' @export
 count_total <- function(gx, gy, r) {
+  validate_xy(gx, gy, r)
+
   count_total_cpp(gx, gy, r)
+}
+
+#' Neighborhood summaries for basal area and counts
+#'
+#' Provide a tidy summary of pairwise neighborhood basal area and counts,
+#' optionally including decay results for a vector of decay parameters.
+#'
+#' @param sp A character or factor vector of species names.
+#' @param gx Numeric x-coordinates of each tree.
+#' @param gy Numeric y-coordinates of each tree.
+#' @param ba Numeric basal area of each tree.
+#' @param r Positive numeric radius within which neighbors are considered.
+#' @param mu_values Optional numeric vector of decay parameters. When `NULL`, the decay table is omitted.
+#' @param dist_weighted Logical flag passed to `ba_simple` to use a simple `ba / dist` weighting when `TRUE`.
+#' @param exponential_normal Logical passed to `ba_decay` to select the exponential-normal kernel.
+#'
+#' @return A list with
+#' * `summary`: data frame with `tree_id`, `species`, `con_ba`, `total_ba`, `con_count`, `total_count`.
+#' * `decay`: (`NULL` or) long data frame with `tree_id`, `species`, `mu`, `con_ba`, `total_ba`.
+#'
+#' @examples
+#' sample_data <- data.frame(
+#'   latin = sample(letters[1:4], 10, replace = TRUE),
+#'   gx = runif(10, 0, 10),
+#'   gy = runif(10, 0, 10),
+#'   ba = runif(10, 10, 30)
+#' )
+#' neighborhood_ba(
+#'   sp = sample_data$latin,
+#'   gx = sample_data$gx,
+#'   gy = sample_data$gy,
+#'   ba = sample_data$ba,
+#'   r = 3,
+#'   mu_values = c(1, 3)
+#' )
+#' @export
+neighborhood_ba <- function(sp, gx, gy, ba, r,
+                            mu_values = NULL,
+                            dist_weighted = FALSE,
+                            exponential_normal = FALSE) {
+  validate_xy(gx, gy, r)
+  sp <- validate_species(sp, length(gx))
+  ba <- validate_ba(ba, length(gx))
+  if (!is.null(mu_values)) {
+    mu_values <- validate_mu_values(mu_values)
+  }
+
+  ba_out <- ba_simple(sp, gx, gy, ba, r, dist_weighted = dist_weighted)
+  summary_tbl <- data.frame(
+    tree_id = seq_len(length(gx)),
+    species = sp,
+    con_ba = ba_out$con_ba,
+    total_ba = ba_out$total_ba,
+    con_count = count_con(sp, gx, gy, r),
+    total_count = count_total(gx, gy, r),
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+
+  decay_tbl <- NULL
+  if (!is.null(mu_values)) {
+    decay_tbl <- ba_decay_long(
+      mu_values = mu_values,
+      sp = sp,
+      gx = gx,
+      gy = gy,
+      ba = ba,
+      r = r,
+      exponential_normal = exponential_normal
+    )
+  }
+
+  list(
+    summary = summary_tbl,
+    decay = decay_tbl
+  )
+}
+
+#' Long-format decay table
+#'
+#' Transform the matrices returned by `ba_decay` into a tidy table that can be
+#' joined with other data or mapped with `ggplot2`.
+#'
+#' @param mu_values Numeric vector of decay parameters.
+#' @param sp Character/factor species vector.
+#' @param gx Numeric x-coordinates.
+#' @param gy Numeric y-coordinates.
+#' @param ba Numeric basal area.
+#' @param r Positive radius threshold.
+#' @param exponential_normal Logical passed to `ba_decay`.
+#'
+#' @return A data frame with `tree_id`, `species`, `mu`, `con_ba`, and `total_ba`.
+#'
+#' @export
+ba_decay_long <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE) {
+  validate_xy(gx, gy, r)
+  sp <- validate_species(sp, length(gx))
+  ba <- validate_ba(ba, length(gx))
+  mu_values <- validate_mu_values(mu_values)
+
+  decay_res <- ba_decay(
+    mu_values = mu_values,
+    sp = sp,
+    gx = gx,
+    gy = gy,
+    ba = ba,
+    r = r,
+    exponential_normal = exponential_normal
+  )
+
+  n <- length(gx)
+  mu_rep <- rep(mu_values, each = n)
+  data.frame(
+    tree_id = rep(seq_len(n), times = length(mu_values)),
+    species = rep(sp, times = length(mu_values)),
+    mu = mu_rep,
+    con_ba = as.vector(decay_res$con_ba_matrix),
+    total_ba = as.vector(decay_res$total_ba_matrix),
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+}
+
+validate_xy <- function(gx, gy, r) {
+  if (!is.numeric(gx) || !is.numeric(gy)) {
+    stop("`gx` and `gy` must be numeric vectors", call. = FALSE)
+  }
+  if (length(gx) != length(gy)) {
+    stop("`gx` and `gy` must have the same length", call. = FALSE)
+  }
+  if (length(r) != 1 || !is.finite(r) || r <= 0) {
+    stop("`r` must be a single finite, positive number", call. = FALSE)
+  }
+  if (any(!is.finite(gx)) || any(!is.finite(gy))) {
+    stop("`gx` and `gy` must contain only finite values", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+validate_species <- function(sp, n) {
+  sp <- as.character(sp)
+  if (length(sp) != n) {
+    stop("`sp` must have the same length as `gx`/`gy`", call. = FALSE)
+  }
+  if (any(is.na(sp))) {
+    stop("`sp` cannot contain `NA` values", call. = FALSE)
+  }
+  sp
+}
+
+validate_ba <- function(ba, n) {
+  if (!is.numeric(ba)) {
+    stop("`ba` must be numeric", call. = FALSE)
+  }
+  if (length(ba) != n) {
+    stop("`ba` must have the same length as the coordinate vectors", call. = FALSE)
+  }
+  if (any(!is.finite(ba))) {
+    stop("`ba` must contain only finite values", call. = FALSE)
+  }
+  ba
+}
+
+validate_mu_values <- function(mu_values) {
+  if (!is.numeric(mu_values)) {
+    stop("`mu_values` must be numeric", call. = FALSE)
+  }
+  if (length(mu_values) == 0) {
+    stop("`mu_values` must contain at least one value", call. = FALSE)
+  }
+  if (any(!is.finite(mu_values)) || any(mu_values <= 0)) {
+    stop("`mu_values` must be positive and finite", call. = FALSE)
+  }
+  mu_values
 }
