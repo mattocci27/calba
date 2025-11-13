@@ -199,7 +199,9 @@ count_total <- function(gx, gy, r) {
 #' @return A list with
 #' * `summary`: data frame with `tree_id`, `species`, `con_ba`, `total_ba`, `con_count`, `total_count`.
 #' * `decay`: (`NULL` or) long data frame with `tree_id`, `species`, `mu`, `con_ba`, `total_ba`.
-#'
+#' 
+#' The `summary` component also includes derived columns:
+#' `prop_con_ba`, `het_ba`, `het_count`, and `competition_index`.
 #' @examples
 #' sample_data <- data.frame(
 #'   latin = sample(letters[1:4], 10, replace = TRUE),
@@ -239,6 +241,8 @@ neighborhood_ba <- function(sp, gx, gy, ba, r,
     stringsAsFactors = FALSE
   )
 
+  summary_tbl <- add_derived_neighborhood_metrics(summary_tbl)
+
   decay_tbl <- NULL
   if (!is.null(mu_values)) {
     decay_tbl <- ba_decay_long(
@@ -256,6 +260,101 @@ neighborhood_ba <- function(sp, gx, gy, ba, r,
     summary = summary_tbl,
     decay = decay_tbl
   )
+}
+
+#' Neighborhood metrics across multiple radii
+#'
+#' Compute basal area sums and counts for each tree across multiple radii in one pass.
+#'
+#' @param sp A character or factor vector of species names.
+#' @param gx Numeric x-coordinates of the trees.
+#' @param gy Numeric y-coordinates of the trees.
+#' @param ba Numeric basal area for each tree.
+#' @param r_values Numeric vector of radii to evaluate.
+#' @param dist_weighted Logical flag to use `ba / dist` weighting within each radius.
+#'
+#' @return A tidy tibble with `tree_id`, `species`, `radius`, `con_ba`, `total_ba`,
+#' `con_count`, `total_count`, `prop_con_ba`, `het_ba`, `het_count`, and
+#' `competition_index`.
+#'
+#' @examples
+#' sample_data <- data.frame(
+#'   latin = sample(letters[1:4], 10, replace = TRUE),
+#'   gx = runif(10, 0, 10),
+#'   gy = runif(10, 0, 10),
+#'   ba = runif(10, 10, 30)
+#' )
+#' neighborhood_multi_radius(
+#'   sp = sample_data$latin,
+#'   gx = sample_data$gx,
+#'   gy = sample_data$gy,
+#'   ba = sample_data$ba,
+#'   r_values = c(3, 5)
+#' )
+#'
+#' @export
+neighborhood_multi_radius <- function(sp, gx, gy, ba, r_values, dist_weighted = FALSE) {
+  r_values <- validate_r_values(r_values)
+  max_r <- max(r_values)
+
+  validate_xy(gx, gy, max_r)
+  sp <- validate_species(sp, length(gx))
+  ba <- validate_ba(ba, length(gx))
+
+  res <- calculate_neighborhood_multi_radius(sp, gx, gy, ba, r_values, dist_weighted)
+
+  n <- length(gx)
+  df <- data.frame(
+    tree_id = rep(seq_len(n), times = length(r_values)),
+    species = rep(sp, times = length(r_values)),
+    radius = rep(r_values, each = n),
+    con_ba = as.vector(res$con_ba),
+    total_ba = as.vector(res$total_ba),
+    con_count = as.vector(res$con_count),
+    total_count = as.vector(res$total_count),
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+
+  df <- add_derived_neighborhood_metrics(df)
+
+  df
+}
+
+#' Derived neighborhood metrics
+#'
+#' Expand a neighborhood summary with heterospecific totals, proportions, and a
+#' simple competition index.
+#'
+#' @param summary_tbl A data frame produced by `neighborhood_ba()` or a similar
+#'   structure containing `con_ba`, `total_ba`, `con_count`, and `total_count`.
+#'
+#' @return The same data frame augmented with:
+#' * `prop_con_ba` – proportion of basal area contributed by conspecifics,
+#' * `het_ba` – heterospecific basal area,
+#' * `het_count` – heterospecific neighbor count,
+#' * `competition_index` – simple competition index (total basal area per neighbor).
+#'
+#' @export
+add_derived_neighborhood_metrics <- function(summary_tbl) {
+  required <- c("con_ba", "total_ba", "con_count", "total_count")
+  if (!all(required %in% names(summary_tbl))) {
+    stop(
+      "`summary_tbl` must contain columns: ",
+      paste(required, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  total_ba <- summary_tbl$total_ba
+  total_count <- summary_tbl$total_count
+
+  summary_tbl$prop_con_ba <- ifelse(total_ba == 0, 0, summary_tbl$con_ba / total_ba)
+  summary_tbl$het_ba <- total_ba - summary_tbl$con_ba
+  summary_tbl$het_count <- total_count - summary_tbl$con_count
+  summary_tbl$competition_index <- ifelse(total_count > 0, total_ba / total_count, 0)
+
+  summary_tbl
 }
 
 #' Long-format decay table
@@ -354,4 +453,17 @@ validate_mu_values <- function(mu_values) {
     stop("`mu_values` must be positive and finite", call. = FALSE)
   }
   mu_values
+}
+
+validate_r_values <- function(r_values) {
+  if (!is.numeric(r_values)) {
+    stop("`r_values` must be numeric", call. = FALSE)
+  }
+  if (length(r_values) == 0) {
+    stop("`r_values` must contain at least one value", call. = FALSE)
+  }
+  if (any(!is.finite(r_values)) || any(r_values <= 0)) {
+    stop("`r_values` must be positive and finite", call. = FALSE)
+  }
+  r_values
 }

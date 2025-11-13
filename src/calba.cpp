@@ -1,5 +1,7 @@
 #include <Rcpp.h>
 #include <cmath>
+#include <algorithm>
+#include <vector>
 using namespace Rcpp;
 
 // Template function to process a focal tree for basal area calculations
@@ -38,6 +40,88 @@ void process_focal_tree_trimmed(int i, const StringVector& sp, const NumericVect
 
   con_ba[i] = con_ba_sum;
   total_ba[i] = total_ba_sum;
+}
+
+struct RadiusEntry {
+  double radius;
+  int index;
+};
+
+// [[Rcpp::export]]
+List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, NumericVector gy,
+                                         NumericVector ba, NumericVector r_values,
+                                         bool dist_weighted = false) {
+  R_xlen_t n_focal = gx.size();
+  R_xlen_t n_r = r_values.size();
+
+  if (n_r == 0) {
+    stop("`r_values` must contain at least one radius");
+  }
+
+  std::vector<RadiusEntry> radii;
+  radii.reserve(static_cast<size_t>(n_r));
+  for (R_xlen_t k = 0; k < n_r; ++k) {
+    double r = r_values[k];
+    if (!std::isfinite(r) || r <= 0) {
+      stop("`r_values` must be positive and finite");
+    }
+    radii.push_back({r, static_cast<int>(k)});
+  }
+
+  std::sort(radii.begin(), radii.end(), [](const RadiusEntry& a, const RadiusEntry& b) {
+    return a.radius < b.radius;
+  });
+
+  double max_r = radii.back().radius;
+
+  NumericMatrix con_ba(n_focal, n_r);
+  NumericMatrix total_ba(n_focal, n_r);
+  NumericMatrix con_count(n_focal, n_r);
+  NumericMatrix total_count(n_focal, n_r);
+
+  auto update_matrix = [&](R_xlen_t idx, double contribution, bool same_species, const RadiusEntry& entry) {
+    int col = entry.index;
+    total_ba(idx, col) += contribution;
+    total_count(idx, col) += 1;
+    if (same_species) {
+      con_ba(idx, col) += contribution;
+      con_count(idx, col) += 1;
+    }
+  };
+
+  for (R_xlen_t i = 0; i < n_focal; ++i) {
+    String target_sp = sp[i];
+    double gx_i = gx[i];
+    double gy_i = gy[i];
+
+    for (R_xlen_t j = 0; j < n_focal; ++j) {
+      if (i == j) continue;
+
+      double dx = gx[j] - gx_i;
+      double dy = gy[j] - gy_i;
+      if (std::abs(dx) > max_r || std::abs(dy) > max_r) continue;
+
+      double dist = std::sqrt(dx * dx + dy * dy);
+      if (dist <= 0 || dist > max_r) continue;
+
+      double contribution = dist_weighted ? ba[j] / dist : ba[j];
+      auto comparator = [](const RadiusEntry& entry, double value) {
+        return entry.radius < value;
+      };
+      auto it = std::lower_bound(radii.begin(), radii.end(), dist, comparator);
+      for (auto iter = it; iter != radii.end(); ++iter) {
+        update_matrix(i, contribution, sp[j] == target_sp, *iter);
+      }
+    }
+  }
+
+  return List::create(
+    Named("r_values") = r_values,
+    Named("con_ba") = con_ba,
+    Named("total_ba") = total_ba,
+    Named("con_count") = con_count,
+    Named("total_count") = total_count
+  );
 }
 
 // [[Rcpp::export]]

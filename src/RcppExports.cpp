@@ -10,6 +10,22 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// calculate_neighborhood_multi_radius
+List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, NumericVector r_values, bool dist_weighted);
+RcppExport SEXP _calba_calculate_neighborhood_multi_radius(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP r_valuesSEXP, SEXP dist_weightedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< StringVector >::type sp(spSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gx(gxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type gy(gySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ba(baSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type r_values(r_valuesSEXP);
+    Rcpp::traits::input_parameter< bool >::type dist_weighted(dist_weightedSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_neighborhood_multi_radius(sp, gx, gy, ba, r_values, dist_weighted));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_basal_area_simple
 List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r, bool dist_weighted);
 RcppExport SEXP _calba_calculate_basal_area_simple(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP, SEXP dist_weightedSEXP) {
@@ -72,6 +88,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_calba_calculate_neighborhood_multi_radius", (DL_FUNC) &_calba_calculate_neighborhood_multi_radius, 6},
     {"_calba_calculate_basal_area_simple", (DL_FUNC) &_calba_calculate_basal_area_simple, 6},
     {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 7},
     {"_calba_count_total_cpp", (DL_FUNC) &_calba_count_total_cpp, 3},

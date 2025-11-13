@@ -36,6 +36,9 @@ neighborhood_ba(
 A list with
 * `summary`: data frame with `tree_id`, `species`, `con_ba`, `total_ba`, `con_count`, `total_count`.
 * `decay`: (`NULL` or) long data frame with `tree_id`, `species`, `mu`, `con_ba`, `total_ba`.
+
+The `summary` component also includes derived columns:
+`prop_con_ba`, `het_ba`, `het_count`, and `competition_index`.
 }
 \description{
 Provide a tidy summary of pairwise neighborhood basal area and counts,
