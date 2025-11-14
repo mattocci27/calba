@@ -12,7 +12,8 @@ neigh_ba(
   r,
   mu_values = NULL,
   dist_weighted = FALSE,
-  exponential_normal = FALSE
+  exponential_normal = FALSE,
+  edge_correction = c("none", "safe")
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ neigh_ba(
 \item{dist_weighted}{Logical flag passed to `ba_simple` to use a simple `ba / dist` weighting when `TRUE`.}
 
 \item{exponential_normal}{Logical passed to `ba_decay` to select the exponential-normal kernel.}
+
+\item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option that skips edge focal trees.}
 }
 \value{
 A list with

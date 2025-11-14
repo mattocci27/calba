@@ -131,6 +131,42 @@ test_that("edge radii behave as expected", {
   expect_equal(counts_large, rep(3L, length(sample_sp)))
 })
 
+test_that("edge_correction 'safe' skips edge focal trees", {
+  r_val <- 1
+  safe_res <- ba_simple(
+    sample_sp,
+    sample_coords$gx,
+    sample_coords$gy,
+    sample_ba,
+    r = r_val,
+    edge_correction = "safe"
+  )
+  expect_true(is.na(safe_res$con_ba[1]))
+  expect_true(is.na(safe_res$total_ba[1]))
+  expect_false(is.na(safe_res$con_ba[2]))
+
+  safe_counts <- count_total(
+    sample_coords$gx,
+    sample_coords$gy,
+    r = r_val,
+    edge_correction = "safe"
+  )
+  expect_true(is.na(safe_counts[1]))
+  expect_false(is.na(safe_counts[2]))
+
+  decay_safe <- ba_decay(
+    c(1, 2),
+    sample_sp,
+    sample_coords$gx,
+    sample_coords$gy,
+    sample_ba,
+    r = r_val,
+    edge_correction = "safe"
+  )
+  expect_true(all(is.na(decay_safe$con_ba_matrix[1, ])))
+  expect_false(any(is.na(decay_safe$con_ba_matrix[2, ])))
+})
+
 test_that("neigh_multi_r matches repeated ba_simple", {
   radii <- c(1, 3)
   res_multi <- neigh_multi_r(sample_sp, sample_coords$gx, sample_coords$gy, sample_ba, radii)

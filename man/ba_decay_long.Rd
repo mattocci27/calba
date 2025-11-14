@@ -4,7 +4,16 @@
 \alias{ba_decay_long}
 \title{Long-format decay table}
 \usage{
-ba_decay_long(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE)
+ba_decay_long(
+  mu_values,
+  sp,
+  gx,
+  gy,
+  ba,
+  r,
+  exponential_normal = FALSE,
+  edge_correction = c("none", "safe")
+)
 }
 \arguments{
 \item{mu_values}{Numeric vector of decay parameters.}
@@ -20,6 +29,8 @@ ba_decay_long(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE)
 \item{r}{Positive radius threshold.}
 
 \item{exponential_normal}{Logical passed to `ba_decay`.}
+
+\item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option.}
 }
 \value{
 A data frame with `tree_id`, `species`, `mu`, `con_ba`, and `total_ba`.

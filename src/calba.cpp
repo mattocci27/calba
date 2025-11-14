@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+#include <string>
 using namespace Rcpp;
 
 struct RadiusEntry {
@@ -12,12 +13,36 @@ struct RadiusEntry {
 struct SpatialGrid {
   double xmin;
   double ymin;
+  double xmax;
+  double ymax;
   double cell_size;
   int nx;
   int ny;
   std::vector<std::vector<int>> cells;
   std::vector<int> cell_ids;
 };
+
+enum class EdgeCorrection {
+  None,
+  Safe
+};
+
+EdgeCorrection parse_edge_correction(const std::string& value) {
+  if (value == "none") {
+    return EdgeCorrection::None;
+  }
+  if (value == "safe") {
+    return EdgeCorrection::Safe;
+  }
+  stop("`edge_correction` must be either 'none' or 'safe'");
+}
+
+inline bool is_safe_focal(double x, double y, double r,
+                          double xmin, double xmax,
+                          double ymin, double ymax) {
+  return (x - r >= xmin) && (x + r <= xmax) &&
+         (y - r >= ymin) && (y + r <= ymax);
+}
 
 inline int clamp_value(int value, int lower, int upper) {
   if (value < lower) {
@@ -61,6 +86,9 @@ SpatialGrid build_spatial_grid(const NumericVector& gx, const NumericVector& gy,
     if (gy[i] < grid.ymin) grid.ymin = gy[i];
     if (gy[i] > max_y) max_y = gy[i];
   }
+
+  grid.xmax = max_x;
+  grid.ymax = max_y;
 
   double range_x = max_x - grid.xmin;
   double range_y = max_y - grid.ymin;
@@ -123,7 +151,8 @@ void for_each_neighbor(const SpatialGrid& grid, int focal_idx, const NumericVect
 // [[Rcpp::export]]
 List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, NumericVector gy,
                                          NumericVector ba, NumericVector r_values,
-                                         bool dist_weighted = false) {
+                                         bool dist_weighted = false,
+                                         std::string edge_correction = "none") {
   R_xlen_t n_focal = gx.size();
   R_xlen_t n_r = r_values.size();
 
@@ -165,12 +194,26 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
   SpatialGrid grid = build_spatial_grid(gx, gy, max_r);
   double max_r_sq = max_r * max_r;
 
+  EdgeCorrection correction = parse_edge_correction(edge_correction);
+  bool require_safe = (correction == EdgeCorrection::Safe);
+  double na_value = NA_REAL;
+
   auto comparator = [](const RadiusEntry& entry, double value) {
     return entry.radius < value;
   };
 
   for (R_xlen_t i = 0; i < n_focal; ++i) {
     String target_sp = sp[i];
+    bool safe = is_safe_focal(gx[i], gy[i], max_r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+    if (require_safe && !safe) {
+      for (int col = 0; col < n_r; ++col) {
+        con_ba(i, col) = na_value;
+        total_ba(i, col) = na_value;
+        con_count(i, col) = na_value;
+        total_count(i, col) = na_value;
+      }
+      continue;
+    }
     for_each_neighbor(grid, i, gx, gy, max_r_sq, [&](int j, double dist, double /*dist_sq*/) {
       if (dist <= 0) {
         return;
@@ -194,7 +237,8 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
 
 // [[Rcpp::export]]
 List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy,
-                                 NumericVector ba, double r, bool dist_weighted = false) {
+                                 NumericVector ba, double r, bool dist_weighted = false,
+                                 std::string edge_correction = "none") {
   int n_focal = gx.size();
   NumericVector con_ba(n_focal, 0.0);
   NumericVector total_ba(n_focal, 0.0);
@@ -202,7 +246,17 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
   SpatialGrid grid = build_spatial_grid(gx, gy, r);
   double max_radius_sq = r * r;
 
+  EdgeCorrection correction = parse_edge_correction(edge_correction);
+  bool require_safe = (correction == EdgeCorrection::Safe);
+  double na_value = NA_REAL;
+
   for (int i = 0; i < n_focal; ++i) {
+    bool safe = is_safe_focal(gx[i], gy[i], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+    if (require_safe && !safe) {
+      con_ba[i] = na_value;
+      total_ba[i] = na_value;
+      continue;
+    }
     String target_sp = sp[i];
     for_each_neighbor(grid, i, gx, gy, max_radius_sq, [&](int j, double dist, double /*dist_sq*/) {
       if (dist <= 0) {
@@ -224,7 +278,8 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
 
 // [[Rcpp::export]]
 List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx,
-                                NumericVector gy, NumericVector ba, double r, std::string decay_type) {
+                                NumericVector gy, NumericVector ba, double r, std::string decay_type,
+                                std::string edge_correction = "none") {
   int n_focal = gx.size();
   int n_mu = mu_values.size();
   NumericMatrix con_ba_matrix(n_focal, n_mu);
@@ -253,9 +308,19 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
 
   double r_sq = r * r;
   SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  EdgeCorrection correction = parse_edge_correction(edge_correction);
+  bool require_safe = (correction == EdgeCorrection::Safe);
+  double na_value = NA_REAL;
 
   for (int i = 0; i < n_focal; ++i) {
     double ba_i = ba[i];
+    bool safe_i = is_safe_focal(gx[i], gy[i], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+    if (require_safe && !safe_i) {
+      for (int m = 0; m < n_mu; ++m) {
+        con_ba_matrix(i, m) = na_value;
+        total_ba_matrix(i, m) = na_value;
+      }
+    }
     for_each_neighbor(grid, i, gx, gy, r_sq, [&](int j, double dist, double dist_sq) {
       if (j <= i || dist_sq <= 0) {
         return;
@@ -271,9 +336,11 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
         }
 
         double contrib_i = ba_j * decay_value;
-        total_ba_matrix(i, m) += contrib_i;
-        if (same_species) {
-          con_ba_matrix(i, m) += contrib_i;
+        if (!(require_safe && !safe_i)) {
+          total_ba_matrix(i, m) += contrib_i;
+          if (same_species) {
+            con_ba_matrix(i, m) += contrib_i;
+          }
         }
 
         double contrib_j = ba_i * decay_value;
@@ -292,14 +359,25 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
 }
 
 // [[Rcpp::export]]
-NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r) {
+NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
+                             std::string edge_correction = "none") {
   int n = gx.size();
   NumericVector res(n);
 
   SpatialGrid grid = build_spatial_grid(gx, gy, r);
   double max_radius_sq = r * r;
+  EdgeCorrection correction = parse_edge_correction(edge_correction);
+  bool require_safe = (correction == EdgeCorrection::Safe);
+  double na_value = NA_REAL;
 
   for (int j = 0; j < n; ++j) {
+    if (require_safe) {
+      bool safe = is_safe_focal(gx[j], gy[j], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+      if (!safe) {
+        res[j] = na_value;
+        continue;
+      }
+    }
     int trees = 0;
     for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int /*i*/, double /*dist*/, double /*dist_sq*/) {
       trees++;
@@ -311,16 +389,27 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r) {
 }
 
 // [[Rcpp::export]]
-NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r) {
+NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r,
+                           std::string edge_correction = "none") {
   int n = sp.size();
   NumericVector res(n);
 
   SpatialGrid grid = build_spatial_grid(gx, gy, r);
   double max_radius_sq = r * r;
+  EdgeCorrection correction = parse_edge_correction(edge_correction);
+  bool require_safe = (correction == EdgeCorrection::Safe);
+  double na_value = NA_REAL;
 
   for (int j = 0; j < n; ++j) {
     int trees = 0;
     String target_sp = sp[j];
+    if (require_safe) {
+      bool safe = is_safe_focal(gx[j], gy[j], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+      if (!safe) {
+        res[j] = na_value;
+        continue;
+      }
+    }
     for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int i, double /*dist*/, double /*dist_sq*/) {
       if (sp[i] == target_sp) {
         trees++;

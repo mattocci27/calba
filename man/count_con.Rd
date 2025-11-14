@@ -4,7 +4,7 @@
 \alias{count_con}
 \title{Count Conspecific Trees}
 \usage{
-count_con(sp, gx, gy, r)
+count_con(sp, gx, gy, r, edge_correction = c("none", "safe"))
 }
 \arguments{
 \item{sp}{A character vector of species names.}
@@ -14,6 +14,8 @@ count_con(sp, gx, gy, r)
 \item{gy}{A numeric vector of y-coordinates for the trees.}
 
 \item{r}{A numeric scalar for the radius parameter.}
+
+\item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option that skips focal trees near the boundary.}
 }
 \value{
 A numeric vector containing the count of conspecific trees within the radius for each focal tree.

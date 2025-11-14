@@ -4,7 +4,15 @@
 \alias{ba_simple}
 \title{Calculate Simple Basal Area}
 \usage{
-ba_simple(sp, gx, gy, ba, r, dist_weighted = FALSE)
+ba_simple(
+  sp,
+  gx,
+  gy,
+  ba,
+  r,
+  dist_weighted = FALSE,
+  edge_correction = c("none", "safe")
+)
 }
 \arguments{
 \item{sp}{A character vector containing species names for each tree.}
@@ -20,6 +28,10 @@ to consider when summing basal areas of neighboring trees (e.g., 1–5 units for
 
 \item{dist_weighted}{Logical. If `TRUE`, use the distance-weighted approach (`ba / dist`);
 if `FALSE`, use the unadjusted `ba`.}
+
+\item{edge_correction}{Character. Use `"none"` (default) to return all focal trees or `"safe"`
+to skip neighborhood calculations for trees within `r` of the plot edges and mark their output
+as `NA`.}
 }
 \value{
 A list with two numeric vectors:

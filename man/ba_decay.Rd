@@ -4,7 +4,16 @@
 \alias{ba_decay}
 \title{Calculate Basal Area with Decay Function}
 \usage{
-ba_decay(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE)
+ba_decay(
+  mu_values,
+  sp,
+  gx,
+  gy,
+  ba,
+  r,
+  exponential_normal = FALSE,
+  edge_correction = c("none", "safe")
+)
 }
 \arguments{
 \item{mu_values}{A numeric vector of decay parameters. Each value in `mu_values` represents
@@ -22,6 +31,8 @@ a decay factor that modifies how the basal area contribution diminishes with dis
 
 \item{exponential_normal}{A logical value. If `FALSE` (default), use exponential decay.
 If `TRUE`, use exponential-normal decay.}
+
+\item{edge_correction}{Character. See `ba_simple()` for the `"safe"` behavior that skips edge trees.}
 }
 \value{
 A list with two matrices:

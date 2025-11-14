@@ -4,7 +4,7 @@
 \alias{count_total}
 \title{Count Total Trees}
 \usage{
-count_total(gx, gy, r)
+count_total(gx, gy, r, edge_correction = c("none", "safe"))
 }
 \arguments{
 \item{gx}{A numeric vector of x-coordinates for the trees.}
@@ -12,6 +12,8 @@ count_total(gx, gy, r)
 \item{gy}{A numeric vector of y-coordinates for the trees.}
 
 \item{r}{A numeric scalar for the radius parameter.}
+
+\item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option that skips focal trees close to the edges.}
 }
 \value{
 A numeric vector containing the count of all trees within the radius for each focal tree.

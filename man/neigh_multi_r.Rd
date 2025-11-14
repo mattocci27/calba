@@ -4,7 +4,15 @@
 \alias{neigh_multi_r}
 \title{Neighborhood metrics across multiple radii}
 \usage{
-neigh_multi_r(sp, gx, gy, ba, r_values, dist_weighted = FALSE)
+neigh_multi_r(
+  sp,
+  gx,
+  gy,
+  ba,
+  r_values,
+  dist_weighted = FALSE,
+  edge_correction = c("none", "safe")
+)
 }
 \arguments{
 \item{sp}{A character or factor vector of species names.}
@@ -18,6 +26,8 @@ neigh_multi_r(sp, gx, gy, ba, r_values, dist_weighted = FALSE)
 \item{r_values}{Numeric vector of radii to evaluate.}
 
 \item{dist_weighted}{Logical flag to use `ba / dist` weighting within each radius.}
+
+\item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option.}
 }
 \value{
 A tidy tibble with `tree_id`, `species`, `radius`, `con_ba`, `total_ba`,
