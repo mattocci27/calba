@@ -159,32 +159,68 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
   NumericMatrix con_ba_matrix(n_focal, n_mu);
   NumericMatrix total_ba_matrix(n_focal, n_mu);
 
-  for (int m = 0; m < n_mu; m++) {
+  if (n_mu == 0) {
+    stop("`mu_values` must contain at least one value");
+  }
+
+  bool exponential_decay = (decay_type == "exponential");
+  bool exponential_normal_decay = (decay_type == "exponential-normal");
+  if (!exponential_decay && !exponential_normal_decay) {
+    stop("Unknown decay type");
+  }
+
+  std::vector<double> inv_mu(n_mu);
+  std::vector<double> inv_mu_sq(n_mu);
+  for (int m = 0; m < n_mu; ++m) {
     double mu = mu_values[m];
-
-    // Decay function for exponential decay
-    auto decay_func = [mu, decay_type](double ba_j, double dist) {
-      if (decay_type == "exponential") {
-        return ba_j * exp(-dist / mu);
-      } else if (decay_type == "exponential-normal") {
-        return ba_j * exp(-dist * dist / (mu * mu));
-      } else {
-        Rcpp::stop("Unknown decay type");
-      }
-    };
-
-    // Temporary vectors to store results for the current mu
-    NumericVector con_ba(n_focal, 0.0);
-    NumericVector total_ba(n_focal, 0.0);
-
-    // Iterate over focal trees
-    for (int i = 0; i < n_focal; i++) {
-      process_focal_tree_trimmed(i, sp, gx, gy, ba, r, decay_func, con_ba, total_ba);
+    if (mu <= 0 || !std::isfinite(mu)) {
+      stop("`mu_values` must be positive and finite");
     }
+    inv_mu[m] = exponential_decay ? 1.0 / mu : 0.0;
+    inv_mu_sq[m] = exponential_normal_decay ? 1.0 / (mu * mu) : 0.0;
+  }
 
-    // Store results for this mu
-    con_ba_matrix(_, m) = con_ba;
-    total_ba_matrix(_, m) = total_ba;
+  double r_sq = r * r;
+
+  for (int i = 0; i < n_focal; ++i) {
+    double gx_i = gx[i];
+    double gy_i = gy[i];
+    double ba_i = ba[i];
+
+    for (int j = i + 1; j < n_focal; ++j) {
+      double dx = gx[j] - gx_i;
+      double dy = gy[j] - gy_i;
+
+      if (std::abs(dx) > r || std::abs(dy) > r) continue;
+
+      double dist_sq = dx * dx + dy * dy;
+      if (dist_sq <= 0 || dist_sq > r_sq) continue;
+
+      double dist = std::sqrt(dist_sq);
+      double ba_j = ba[j];
+      bool same_species = sp[j] == sp[i];
+
+      for (int m = 0; m < n_mu; ++m) {
+        double decay_value;
+        if (exponential_decay) {
+          decay_value = std::exp(-dist * inv_mu[m]);
+        } else {
+          decay_value = std::exp(-dist_sq * inv_mu_sq[m]);
+        }
+
+        double contrib_i = ba_j * decay_value;
+        total_ba_matrix(i, m) += contrib_i;
+        if (same_species) {
+          con_ba_matrix(i, m) += contrib_i;
+        }
+
+        double contrib_j = ba_i * decay_value;
+        total_ba_matrix(j, m) += contrib_j;
+        if (same_species) {
+          con_ba_matrix(j, m) += contrib_j;
+        }
+      }
+    }
   }
 
   return List::create(
