@@ -11,4 +11,5 @@ Imports: Rcpp
 Suggests: testthat (>= 3.1.0)
 LinkingTo: Rcpp
 Maintainer: Masatoshi Katabuchi <mattocci27@gmail.com>
+Author: Masatoshi Katabuchi [aut, cre]
 RoxygenNote: 7.3.2

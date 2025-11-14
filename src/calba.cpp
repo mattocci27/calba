@@ -4,48 +4,121 @@
 #include <vector>
 using namespace Rcpp;
 
-// Template function to process a focal tree for basal area calculations
-template <typename DecayFunc>
-void process_focal_tree_trimmed(int i, const StringVector& sp, const NumericVector& gx,
-                                const NumericVector& gy, const NumericVector& ba, double r,
-                                DecayFunc decay_func,
-                                NumericVector& con_ba, NumericVector& total_ba) {
-  String target_sp = sp[i];
-  double con_ba_sum = 0.0;
-  double total_ba_sum = 0.0;
-
-  double gx_i = gx[i];
-  double gy_i = gy[i];
-  int n_focal = gx.size();
-
-  for (int j = 0; j < n_focal; j++) {
-    if (i == j) continue;
-
-    // Trim based on bounding box
-    double dx = gx[j] - gx_i;
-    double dy = gy[j] - gy_i;
-    if (std::abs(dx) > r || std::abs(dy) > r) continue;
-
-    // Compute actual distance
-    double dist = std::sqrt(dx * dx + dy * dy);
-    if (dist > 0 && dist <= r) {
-      double ba_decay = decay_func(ba[j], dist);
-
-      total_ba_sum += ba_decay; // Add to total basal area
-      if (sp[j] == target_sp) {
-        con_ba_sum += ba_decay;
-      }
-    }
-  }
-
-  con_ba[i] = con_ba_sum;
-  total_ba[i] = total_ba_sum;
-}
-
 struct RadiusEntry {
   double radius;
   int index;
 };
+
+struct SpatialGrid {
+  double xmin;
+  double ymin;
+  double cell_size;
+  int nx;
+  int ny;
+  std::vector<std::vector<int>> cells;
+  std::vector<int> cell_ids;
+};
+
+inline int clamp_value(int value, int lower, int upper) {
+  if (value < lower) {
+    return lower;
+  }
+  if (value > upper) {
+    return upper;
+  }
+  return value;
+}
+
+inline int compute_cell_id(const SpatialGrid& grid, double x, double y) {
+  int cx = static_cast<int>(std::floor((x - grid.xmin) / grid.cell_size));
+  int cy = static_cast<int>(std::floor((y - grid.ymin) / grid.cell_size));
+  cx = clamp_value(cx, 0, grid.nx - 1);
+  cy = clamp_value(cy, 0, grid.ny - 1);
+  return cy * grid.nx + cx;
+}
+
+SpatialGrid build_spatial_grid(const NumericVector& gx, const NumericVector& gy, double radius) {
+  int n = gx.size();
+  SpatialGrid grid;
+  grid.cell_size = radius;
+  if (n == 0) {
+    grid.xmin = 0.0;
+    grid.ymin = 0.0;
+    grid.nx = 1;
+    grid.ny = 1;
+    grid.cells.assign(1, std::vector<int>());
+    grid.cell_ids.clear();
+    return grid;
+  }
+  grid.xmin = gx[0];
+  grid.ymin = gy[0];
+  double max_x = gx[0];
+  double max_y = gy[0];
+
+  for (int i = 1; i < n; ++i) {
+    if (gx[i] < grid.xmin) grid.xmin = gx[i];
+    if (gx[i] > max_x) max_x = gx[i];
+    if (gy[i] < grid.ymin) grid.ymin = gy[i];
+    if (gy[i] > max_y) max_y = gy[i];
+  }
+
+  double range_x = max_x - grid.xmin;
+  double range_y = max_y - grid.ymin;
+  double max_range = std::max(range_x, range_y);
+  double approx_cells = std::sqrt(static_cast<double>(n));
+  if (approx_cells < 1.0) {
+    approx_cells = 1.0;
+  }
+  double scale = (max_range > 0.0) ? (max_range / approx_cells) : radius;
+  double cell_size = std::max(radius, scale);
+  grid.cell_size = cell_size;
+
+  int nx = static_cast<int>(std::floor(range_x / cell_size)) + 1;
+  int ny = static_cast<int>(std::floor(range_y / cell_size)) + 1;
+  grid.nx = std::max(1, nx);
+  grid.ny = std::max(1, ny);
+
+  grid.cells.assign(grid.nx * grid.ny, std::vector<int>());
+  grid.cell_ids.assign(n, 0);
+
+  for (int i = 0; i < n; ++i) {
+    int id = compute_cell_id(grid, gx[i], gy[i]);
+    grid.cell_ids[i] = id;
+    grid.cells[id].push_back(i);
+  }
+
+  return grid;
+}
+
+template <typename Func>
+void for_each_neighbor(const SpatialGrid& grid, int focal_idx, const NumericVector& gx,
+                       const NumericVector& gy, double max_radius_sq, Func&& func) {
+  int base_cell = grid.cell_ids[focal_idx];
+  int base_cx = base_cell % grid.nx;
+  int base_cy = base_cell / grid.nx;
+  double gx_i = gx[focal_idx];
+  double gy_i = gy[focal_idx];
+
+  for (int dx = -1; dx <= 1; ++dx) {
+    int ncx = base_cx + dx;
+    if (ncx < 0 || ncx >= grid.nx) continue;
+    for (int dy = -1; dy <= 1; ++dy) {
+      int ncy = base_cy + dy;
+      if (ncy < 0 || ncy >= grid.ny) continue;
+      int cell_index = ncy * grid.nx + ncx;
+      const std::vector<int>& bucket = grid.cells[cell_index];
+      for (int j : bucket) {
+        if (j == focal_idx) continue;
+        double dx_val = gx[j] - gx_i;
+        double dy_val = gy[j] - gy_i;
+        double dist_sq = dx_val * dx_val + dy_val * dy_val;
+        if (dist_sq > max_radius_sq) continue;
+        double dist = std::sqrt(dist_sq);
+        func(j, dist, dist_sq);
+      }
+    }
+  }
+}
 
 // [[Rcpp::export]]
 List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, NumericVector gy,
@@ -89,30 +162,25 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
     }
   };
 
+  SpatialGrid grid = build_spatial_grid(gx, gy, max_r);
+  double max_r_sq = max_r * max_r;
+
+  auto comparator = [](const RadiusEntry& entry, double value) {
+    return entry.radius < value;
+  };
+
   for (R_xlen_t i = 0; i < n_focal; ++i) {
     String target_sp = sp[i];
-    double gx_i = gx[i];
-    double gy_i = gy[i];
-
-    for (R_xlen_t j = 0; j < n_focal; ++j) {
-      if (i == j) continue;
-
-      double dx = gx[j] - gx_i;
-      double dy = gy[j] - gy_i;
-      if (std::abs(dx) > max_r || std::abs(dy) > max_r) continue;
-
-      double dist = std::sqrt(dx * dx + dy * dy);
-      if (dist <= 0 || dist > max_r) continue;
-
+    for_each_neighbor(grid, i, gx, gy, max_r_sq, [&](int j, double dist, double /*dist_sq*/) {
+      if (dist <= 0) {
+        return;
+      }
       double contribution = dist_weighted ? ba[j] / dist : ba[j];
-      auto comparator = [](const RadiusEntry& entry, double value) {
-        return entry.radius < value;
-      };
       auto it = std::lower_bound(radii.begin(), radii.end(), dist, comparator);
       for (auto iter = it; iter != radii.end(); ++iter) {
         update_matrix(i, contribution, sp[j] == target_sp, *iter);
       }
-    }
+    });
   }
 
   return List::create(
@@ -131,18 +199,21 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
   NumericVector con_ba(n_focal, 0.0);
   NumericVector total_ba(n_focal, 0.0);
 
-  // Decay function for simple decay
-  auto decay_func = [dist_weighted](double ba_j, double dist) {
-    if (dist_weighted) {
-      return ba_j / dist; // Distance-weighted calculation
-    } else {
-      return ba_j; // Simple basal area
-    }
-  };
+  SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  double max_radius_sq = r * r;
 
-  // Iterate over focal trees
-  for (int i = 0; i < n_focal; i++) {
-    process_focal_tree_trimmed(i, sp, gx, gy, ba, r, decay_func, con_ba, total_ba);
+  for (int i = 0; i < n_focal; ++i) {
+    String target_sp = sp[i];
+    for_each_neighbor(grid, i, gx, gy, max_radius_sq, [&](int j, double dist, double /*dist_sq*/) {
+      if (dist <= 0) {
+        return;
+      }
+      double contribution = dist_weighted ? ba[j] / dist : ba[j];
+      total_ba[i] += contribution;
+      if (sp[j] == target_sp) {
+        con_ba[i] += contribution;
+      }
+    });
   }
 
   return List::create(
@@ -181,25 +252,16 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
   }
 
   double r_sq = r * r;
+  SpatialGrid grid = build_spatial_grid(gx, gy, r);
 
   for (int i = 0; i < n_focal; ++i) {
-    double gx_i = gx[i];
-    double gy_i = gy[i];
     double ba_i = ba[i];
-
-    for (int j = i + 1; j < n_focal; ++j) {
-      double dx = gx[j] - gx_i;
-      double dy = gy[j] - gy_i;
-
-      if (std::abs(dx) > r || std::abs(dy) > r) continue;
-
-      double dist_sq = dx * dx + dy * dy;
-      if (dist_sq <= 0 || dist_sq > r_sq) continue;
-
-      double dist = std::sqrt(dist_sq);
+    for_each_neighbor(grid, i, gx, gy, r_sq, [&](int j, double dist, double dist_sq) {
+      if (j <= i || dist_sq <= 0) {
+        return;
+      }
       double ba_j = ba[j];
       bool same_species = sp[j] == sp[i];
-
       for (int m = 0; m < n_mu; ++m) {
         double decay_value;
         if (exponential_decay) {
@@ -220,7 +282,7 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
           con_ba_matrix(j, m) += contrib_j;
         }
       }
-    }
+    });
   }
 
   return List::create(
@@ -234,24 +296,14 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r) {
   int n = gx.size();
   NumericVector res(n);
 
-  for (int j = 0; j < n; j++) {
+  SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  double max_radius_sq = r * r;
+
+  for (int j = 0; j < n; ++j) {
     int trees = 0;
-    double gx_j = gx[j];
-    double gy_j = gy[j];
-
-    for (int i = 0; i < n; i++) {
-      if (i == j) continue; // Skip the focal tree
-      double dx = gx[i] - gx_j;
-      double dy = gy[i] - gy_j;
-
-      // Trim based on bounding box
-      if (std::abs(dx) > r || std::abs(dy) > r) continue;
-
-      // Compute actual distance
-      if ((dx * dx + dy * dy) <= r * r) {
-        trees++;
-      }
-    }
+    for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int /*i*/, double /*dist*/, double /*dist_sq*/) {
+      trees++;
+    });
     res[j] = trees;
   }
 
@@ -263,25 +315,17 @@ NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy,
   int n = sp.size();
   NumericVector res(n);
 
-  for (int j = 0; j < n; j++) {
+  SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  double max_radius_sq = r * r;
+
+  for (int j = 0; j < n; ++j) {
     int trees = 0;
-    double gx_j = gx[j];
-    double gy_j = gy[j];
     String target_sp = sp[j];
-
-    for (int i = 0; i < n; i++) {
-      if (i == j) continue; // Skip the focal tree
-      double dx = gx[i] - gx_j;
-      double dy = gy[i] - gy_j;
-
-      // Trim based on bounding box
-      if (std::abs(dx) > r || std::abs(dy) > r) continue;
-
-      // Compute actual distance and check species
-      if ((dx * dx + dy * dy) <= r * r && sp[i] == target_sp) {
+    for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int i, double /*dist*/, double /*dist_sq*/) {
+      if (sp[i] == target_sp) {
         trees++;
       }
-    }
+    });
     res[j] = trees;
   }
 
