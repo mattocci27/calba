@@ -379,7 +379,10 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
       }
     }
     int trees = 0;
-    for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int /*i*/, double /*dist*/, double /*dist_sq*/) {
+    for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int /*i*/, double /*dist*/, double dist_sq) {
+      if (dist_sq <= 0.0) {
+        return;
+      }
       trees++;
     });
     res[j] = trees;
@@ -410,7 +413,10 @@ NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy,
         continue;
       }
     }
-    for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int i, double /*dist*/, double /*dist_sq*/) {
+    for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int i, double /*dist*/, double dist_sq) {
+      if (dist_sq <= 0.0) {
+        return;
+      }
       if (sp[i] == target_sp) {
         trees++;
       }
