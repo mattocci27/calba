@@ -56,6 +56,21 @@ ba_simple(
 
 For sensitivity analyses, `ba_decay()` evaluates exponential and exponential-normal kernels over grids of decay parameters, while `neigh_multi_r()` reuses the same distance calculations across multiple radii to avoid recomputation.
 
+For model-ready summaries, `neigh_ba()` combines basal-area totals, neighbor counts, and derived variables (e.g., heterospecific basal area, conspecific proportion, competition index) in a tidy data frame suitable for regression and mixed-effects models. It optionally includes decay-weighted results for multiple `mu` values.
+
+```{r}
+neigh_ba(
+  sp = trees$sp,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r = 5,
+  mu_values = c(1, 3)
+)$summary
+```
+
+
+
 ## Implementation and quality control
 
 All core routines live in `src/calba.cpp`, where distance calculations, species comparisons, and kernel applications are performed in compiled loops.
@@ -80,5 +95,7 @@ Install the latest release from GitHub with `remotes::install_github("mattocci27
 Source code is hosted at `https://github.com/mattocci27/calba` under the GPL-3 license, and the current version is 0.1.0.
 `calba` depends on Rcpp for the compiled kernels and uses testthat for regression tests (`tests/testthat/*`).
 Run the bundled tests with `devtools::test()` and validate the package with `devtools::check()` before submission.
+
+## Acknowledgements
 
 ## References
