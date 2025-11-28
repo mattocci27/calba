@@ -1,4 +1,5 @@
 ^test\.R$
 ^LICENSE\.md$
 ^README\.md$
+^test\.qmd$
 ^data\.csv$

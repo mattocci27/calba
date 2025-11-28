@@ -32,6 +32,30 @@ Packages such as `siplab` and `forestecology` can compute neighborhood competiti
 
 ## Usage
 
+Install the development version with `remotes::install_github("mattocci27/calba")`, then compute neighborhood basal area for mapped stems using `ba_simple()` or `ba_decay()`.
+The example below returns conspecific and total basal area within 5 distance units, with edge correction and distance weighting enabled:
+
+```{r}
+library(calba)
+
+n <- 1000
+set.seed(123)
+
+trees <- data.frame(
+  sp = sample(c("oak", "pine", "birch"), n, replace = TRUE),
+  gx = runif(n, 0, 100),
+  gy = runif(n, 0, 100),
+  ba = runif(n, 0, 1)
+)
+
+ba_simple(
+  sp = trees$sp, gx = trees$gx, gy = trees$gy, ba = trees$ba,
+  r = 5, dist_weighted = TRUE, edge_correction = "safe"
+)
+```
+
+For sensitivity analyses, `ba_decay()` evaluates exponential and exponential-normal kernels over grids of decay parameters, while `neigh_multi_r()` reuses the same distance calculations across multiple radii to avoid recomputation.
+
 ## Implementation and quality control
 
 All core routines live in `src/calba.cpp`, where distance calculations, species comparisons, and kernel applications are performed in compiled loops.
@@ -58,4 +82,3 @@ Source code is hosted at `https://github.com/mattocci27/calba` under the GPL-3 l
 Run the bundled tests with `devtools::test()` and validate the package with `devtools::check()` before submission.
 
 ## References
-
