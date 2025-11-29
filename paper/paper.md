@@ -32,33 +32,21 @@ Packages such as `siplab` and `forestecology` can compute neighborhood competiti
 
 ## Usage
 
-Install the development version with `remotes::install_github("mattocci27/calba")`, then compute neighborhood basal area for mapped stems using `ba_simple()` or `ba_decay()`.
-The example below returns conspecific and total basal area within 5 distance units, with edge correction and distance weighting enabled:
+Install the development version with `remotes::install_github("mattocci27/calba")`.  
+`neigh_ba()` is the primary interface for computing conspecific and total basal area, neighbor counts, and decay-based summaries in a single call.  
+The function returns a tidy data frame that can be used directly in regression and mixed-effects models.
 
-```{r}
+```r
 library(calba)
 
-n <- 1000
 set.seed(123)
-
 trees <- data.frame(
-  sp = sample(c("oak", "pine", "birch"), n, replace = TRUE),
-  gx = runif(n, 0, 100),
-  gy = runif(n, 0, 100),
-  ba = runif(n, 0, 1)
+  sp = sample(c("oak", "pine", "birch"), 1000, replace = TRUE),
+  gx = runif(1000, 0, 100),
+  gy = runif(1000, 0, 100),
+  ba = runif(1000, 0, 1)
 )
 
-ba_simple(
-  sp = trees$sp, gx = trees$gx, gy = trees$gy, ba = trees$ba,
-  r = 5, dist_weighted = TRUE, edge_correction = "safe"
-)
-```
-
-For sensitivity analyses, `ba_decay()` evaluates exponential and exponential-normal kernels over grids of decay parameters, while `neigh_multi_r()` reuses the same distance calculations across multiple radii to avoid recomputation.
-
-For model-ready summaries, `neigh_ba()` combines basal-area totals, neighbor counts, and derived variables (e.g., heterospecific basal area, conspecific proportion, competition index) in a tidy data frame suitable for regression and mixed-effects models. It optionally includes decay-weighted results for multiple `mu` values.
-
-```{r}
 neigh_ba(
   sp = trees$sp,
   gx = trees$gx,
@@ -69,6 +57,19 @@ neigh_ba(
 )$summary
 ```
 
+For analyses that compare multiple radii, `neigh_multi_r()` reuses a single distance matrix and returns neighborhood metrics across user-defined radii.
+
+```r
+neigh_multi_r(
+  sp = trees$sp,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r = c(2, 5, 10)
+)
+```
+
+Advanced users can access the underlying kernels through `ba_simple()`, `ba_decay()`, `count_con()`, and `count_total()`, which provide low-level components for custom workflows.
 
 
 ## Implementation and quality control
