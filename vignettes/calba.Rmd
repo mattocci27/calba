@@ -1,0 +1,184 @@
+---
+title: "Neighborhood basal area with calba"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Neighborhood basal area with calba}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette shows how to compute neighborhood basal area with `calba`.
+We start from a simple simulated plot, then use `neigh_ba()` for model-ready summaries.
+We then illustrate multiple radii, low-level helper functions, and basic edge correction options.
+
+## Example data
+
+Simulate a modest plot with 500 trees, four species, 50x50 m extent, and basal areas between 20 and 200 (e.g., cm^2).
+
+```{r, fig.width=4, fig.height=4}
+library(calba)
+library(ggplot2)
+set.seed(42)
+side <- 50
+n <- 500
+trees <- data.frame(
+  species = sample(c("oak", "pine", "birch", "maple"), n, replace = TRUE),
+  gx = runif(n, 0, side),
+  gy = runif(n, 0, side),
+  ba = runif(n, 20, 200)
+)
+
+ggplot(trees, aes(gx, gy, col = species)) +
+  geom_point() +
+  coord_fixed() +
+  theme_bw()
+```
+
+
+## Core summaries: `neigh_ba()`
+
+`neigh_ba()` computes conspecific and total basal area, neighbor counts,
+and derived metrics for a single radius.
+
+Optionally, we can add decay-weighted summaries by supplying `mu_values`.
+This appends a long table of distance-weighted basal area for each decay parameter, which is returned in the `decay` component.
+
+```{r}
+nb <- neigh_ba(
+  sp = trees$species,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r = 5,
+  mu_values = c(2, 6)
+)
+
+head(nb$summary)
+```
+
+We can inspect the full structure of the returned object:
+
+```{r}
+str(nb)
+```
+
+nb$decay is a long table of decay-weighted basal area for each mu.
+
+```{r}
+head(nb$decay)
+```
+
+## Edge handling and bounds
+
+Use `edge_correction = "safe"` to return NA for focal trees within r of the plot boundary.
+By default, bounds are the min and max of gx and gy.
+Supply bounds = c(xmin, xmax, ymin, ymax) if your plot is larger than the observed coordinates.
+
+```{r}
+nb_bounds <- neigh_ba(
+  sp = trees$species,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r = 5,
+  edge_correction = "safe",
+  bounds = c(0, 50, 0, 50)
+)$summary
+
+head(nb_bounds)
+```
+
+Then in **Low-level helpers** you keep the detailed explanation of the exponential and exponential-normal kernels and the `ba_decay()` code.
+
+## Multiple radii in one pass: `neigh_multi_r()`
+
+Reuse a single distance structure across radii.
+
+```{r}
+multi <- neigh_multi_r(
+  sp = trees$species,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r_values = c(3, 5, 10),
+  dist_weighted = FALSE
+)
+
+multi_r5 <- subset(multi, radius == 5)
+head(multi_r5)
+```
+
+## Low-level helpers
+
+`calba` provides several lower-level functions used by `neigh_ba()` and `neigh_multi_r()`:
+
+- `ba_simple()` for unweighted or distance-weighted basal area at one radius
+- `ba_decay()` for decay kernels (exponential or exponential-normal)
+- `count_con()` and `count_total()` for neighbor counts
+
+### Decay kernels in `ba_decay()`
+
+`ba_decay()` computes distance–weighted basal area using either of two kernels.
+
+**Exponential:**
+
+$$
+w(d, \mu) = \exp\left(-\frac{d}{\mu}\right)
+$$
+
+**Exponential-normal (Gaussian in distance):**
+
+$$
+w(d, \mu) = \exp\left(-\frac{d^2}{\mu^2}\right)
+$$
+
+Neighbors contribute `ba * w(d, mu)` to the focal tree, where
+`d` is Euclidean distance and `mu` controls the decay scale.
+
+```{r}
+mu_vals <- c(2, 6)
+
+decay_exp <- ba_decay(
+  mu_values = mu_vals,
+  sp = trees$species,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r = 5,
+  exponential_normal = FALSE
+)
+head(decay_exp$con_ba_matrix)
+
+decay_expnorm <- ba_decay(
+  mu_values = mu_vals,
+  sp = trees$species,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r = 5,
+  exponential_normal = TRUE
+)
+head(decay_expnorm$con_ba_matrix)
+```
+
+### Unweighted or distance-weighted basal area: ba_simple()
+
+```{r}
+ba_simple_out <- ba_simple(
+  sp = trees$species,
+  gx = trees$gx,
+  gy = trees$gy,
+  ba = trees$ba,
+  r = 5,
+  dist_weighted = TRUE
+)
+
+str(ba_simple_out)
+```
+
+### Neighbor counts
+
+```{r}
+count_total_out <- count_total(trees$gx, trees$gy, r = 5)
+head(count_total_out)
+```

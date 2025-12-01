@@ -9,8 +9,13 @@ BugReports: https://github.com/mattocci27/calba/issues
 Encoding: UTF-8
 LazyData: true
 Imports: Rcpp
-Suggests: testthat (>= 3.1.0)
+Suggests:
+    testthat (>= 3.1.0),
+    knitr,
+    rmarkdown,
+    ggplot2
 LinkingTo: Rcpp
 Maintainer: Masatoshi Katabuchi <mattocci27@gmail.com>
 Author: Masatoshi Katabuchi [aut, cre]
 RoxygenNote: 7.3.3
+VignetteBuilder: knitr

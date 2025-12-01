@@ -6,3 +6,5 @@
 ^test\.qmd$
 ^data\.csv$
 ^paper$
+^doc$
+^Meta$

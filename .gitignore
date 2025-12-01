@@ -11,3 +11,5 @@ test.R
 test.html
 test_files/*
 test.qmd
+/doc/
+/Meta/
