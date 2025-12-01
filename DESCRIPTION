@@ -5,6 +5,7 @@ Authors@R:
     person("Masatoshi", "Katabuchi", email = "mattocci27@gmail.com", role = c("aut", "cre"))
 Description: Fast C++-backed tools for computing conspecific and total neighborhood basal area in mapped forest plots. Includes unweighted and distance-weighted neighborhoods, multiple radii, decay kernels, and basic edge correction. Outputs are model-ready covariates for forest competition, growth, and survival models.
 License: GPL-3 | file LICENSE
+BugReports: https://github.com/mattocci27/calba/issues
 Encoding: UTF-8
 LazyData: true
 Imports: Rcpp
