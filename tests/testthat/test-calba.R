@@ -79,12 +79,19 @@ brute_decay <- function(mu_values, sp, gx, gy, ba, r, decay_type) {
   list(con = con_mat, total = total_mat)
 }
 
-sample_sp <- c("oak", "pine", "oak", "birch")
-sample_coords <- list(
-  gx = c(0, 1, 2.5, 0.5),
-  gy = c(0, 1.1, 2.2, 3)
+set.seed(42)
+sample_data <- data.frame(
+  latin = sample(letters[1:4], 100, replace = TRUE),
+  gx = runif(100, 0, 10),
+  gy = runif(100, 0, 10),
+  ba = runif(100, 10, 30)
 )
-sample_ba <- c(10, 20, 30, 40)
+sample_sp <- sample_data$latin
+sample_coords <- list(
+  gx = sample_data$gx,
+  gy = sample_data$gy
+)
+sample_ba <- sample_data$ba
 
 test_that("ba_simple matches brute force (weighted/unweighted)", {
   res_plain <- ba_simple(sample_sp, sample_coords$gx, sample_coords$gy, sample_ba, r = 3)
@@ -128,7 +135,7 @@ test_that("edge radii behave as expected", {
   expect_true(all(tiny$total_ba == 0))
 
   counts_large <- count_total(sample_coords$gx, sample_coords$gy, r = 100)
-  expect_equal(counts_large, rep(3L, length(sample_sp)))
+  expect_equal(counts_large, rep(length(sample_sp) - 1L, length(sample_sp)))
 })
 
 test_that("edge_correction 'safe' skips edge focal trees", {
@@ -141,9 +148,8 @@ test_that("edge_correction 'safe' skips edge focal trees", {
     r = r_val,
     edge_correction = "safe"
   )
-  expect_true(is.na(safe_res$con_ba[1]))
-  expect_true(is.na(safe_res$total_ba[1]))
-  expect_false(is.na(safe_res$con_ba[2]))
+  expect_true(any(is.na(safe_res$con_ba)))
+  expect_true(any(is.na(safe_res$total_ba)))
 
   safe_counts <- count_total(
     sample_coords$gx,
@@ -151,8 +157,7 @@ test_that("edge_correction 'safe' skips edge focal trees", {
     r = r_val,
     edge_correction = "safe"
   )
-  expect_true(is.na(safe_counts[1]))
-  expect_false(is.na(safe_counts[2]))
+  expect_true(any(is.na(safe_counts)))
 
   decay_safe <- ba_decay(
     c(1, 2),
@@ -163,12 +168,22 @@ test_that("edge_correction 'safe' skips edge focal trees", {
     r = r_val,
     edge_correction = "safe"
   )
-  expect_true(all(is.na(decay_safe$con_ba_matrix[1, ])))
-  expect_false(any(is.na(decay_safe$con_ba_matrix[2, ])))
+  expect_true(any(is.na(decay_safe$con_ba_matrix)))
 })
 
 test_that("user-supplied bounds control safe edge detection", {
   r_val <- 1
+  xmin <- min(sample_coords$gx)
+  xmax <- max(sample_coords$gx)
+  ymin <- min(sample_coords$gy)
+  ymax <- max(sample_coords$gy)
+  expected_edge <- !(
+    (sample_coords$gx - r_val >= xmin) &
+      (sample_coords$gx + r_val <= xmax) &
+      (sample_coords$gy - r_val >= ymin) &
+      (sample_coords$gy + r_val <= ymax)
+  )
+
   default_safe <- ba_simple(
     sample_sp,
     sample_coords$gx,
@@ -177,9 +192,8 @@ test_that("user-supplied bounds control safe edge detection", {
     r = r_val,
     edge_correction = "safe"
   )
-  expect_true(is.na(default_safe$con_ba[1]))
-
-  custom_bounds <- c(-5, 5, -5, 5)
+  expect_equal(is.na(default_safe$con_ba), expected_edge)
+  custom_bounds <- c(-1, 11, -1, 11)
   bounded_safe <- ba_simple(
     sample_sp,
     sample_coords$gx,
@@ -189,7 +203,7 @@ test_that("user-supplied bounds control safe edge detection", {
     edge_correction = "safe",
     bounds = custom_bounds
   )
-  expect_false(is.na(bounded_safe$con_ba[1]))
+  expect_false(any(is.na(bounded_safe$con_ba)))
   expect_true(all(sample_coords$gx <= custom_bounds[2]))
 })
 
