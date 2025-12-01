@@ -13,7 +13,7 @@ affiliations:
   - name: Yunnan Key Laboratory of Forest Ecosystem Stability and Global Change Response, Xishuangbanna Tropical Botanical Garden, Chinese Academy of Sciences, Mengla, Yunnan 666303, China
     index: 1
 date: 27 November 2025
-bibliography: paper.bib
+bibliography: calba.bib
 ---
 
 ## Summary
@@ -27,8 +27,12 @@ The outputs are model-ready covariates for competition, growth, or survival mode
 Quantifying neighborhood structure is fundamental in spatial ecology and forest dynamics because competition and facilitation operate at local scales defined by distance and species identity [@Song2024; @Hulsmann2024; @Wiegand2025].
 Researchers often need to evaluate many alternative hypotheses, such as multiple radii, different decay functions, or focal subsets of species, before fitting statistical models.
 Generic spatial packages can compute pairwise distances or intensity functions, but they rarely provide conspecific and total basal-area metrics with built-in edge correction and customizable kernels.
-Packages such as `siplab` and `forestecology` can compute neighborhood competition indices, but they require multi-step workflows (custom kernels, package-specific spatial objects, and manual aggregation of neighbor attributes), and neither offers a direct function for conspecific and total basal area within a radius.
-`calba` fills this gap by delivering high-performance neighborhood summaries that make radius, kernel choice, and edge treatment explicit, enabling ecologists to generate model-ready covariates without re-implementing the computationally expensive looping logic in R.
+Packages such as `siplab` [@Garcia2014], `forestecology` [@Kim2021], and the ForestGEO package `fgeo` include neighborhood or spatial utilities that support a wide range of tasks.
+However, their neighborhood functions are typically designed for broader plot-level workflows and therefore do not focus on producing conspecific and total basal-area summaries with flexible radii, distance-decay kernels, and simple edge treatment in a single, model-ready step.
+In contrast, `calba` provides a dedicated high-performance implementation that reuses distance calculations, minimizes memory allocation, and processes radii and decay parameters in a single C++ pass.
+These optimizations make `calba` substantially faster in practice, often by orders of magnitude compared with R-level implementations and noticeably faster even than straightforward C++ loops.
+`calba` also returns clean, model-ready neighborhood covariates—including conspecific and total basal area, heterospecific components, decay-weighted metrics, and neighbor counts—so that researchers can proceed directly to competition, growth, or survival models without additional data wrangling.
+Together, these features allow ecologists to compute comprehensive neighborhood summaries efficiently, even for large forest plots with tens or hundreds of thousands of stems.
 
 ## Usage
 
