@@ -167,6 +167,32 @@ test_that("edge_correction 'safe' skips edge focal trees", {
   expect_false(any(is.na(decay_safe$con_ba_matrix[2, ])))
 })
 
+test_that("user-supplied bounds control safe edge detection", {
+  r_val <- 1
+  default_safe <- ba_simple(
+    sample_sp,
+    sample_coords$gx,
+    sample_coords$gy,
+    sample_ba,
+    r = r_val,
+    edge_correction = "safe"
+  )
+  expect_true(is.na(default_safe$con_ba[1]))
+
+  custom_bounds <- c(-5, 5, -5, 5)
+  bounded_safe <- ba_simple(
+    sample_sp,
+    sample_coords$gx,
+    sample_coords$gy,
+    sample_ba,
+    r = r_val,
+    edge_correction = "safe",
+    bounds = custom_bounds
+  )
+  expect_false(is.na(bounded_safe$con_ba[1]))
+  expect_true(all(sample_coords$gx <= custom_bounds[2]))
+})
+
 test_that("neigh_multi_r matches repeated ba_simple", {
   radii <- c(1, 3)
   res_multi <- neigh_multi_r(sample_sp, sample_coords$gx, sample_coords$gy, sample_ba, radii)

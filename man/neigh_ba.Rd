@@ -13,7 +13,8 @@ neigh_ba(
   mu_values = NULL,
   dist_weighted = FALSE,
   exponential_normal = FALSE,
-  edge_correction = c("none", "safe")
+  edge_correction = c("none", "safe"),
+  bounds = NULL
 )
 }
 \arguments{
@@ -34,6 +35,9 @@ neigh_ba(
 \item{exponential_normal}{Logical passed to `ba_decay` to select the exponential-normal kernel.}
 
 \item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option that skips edge focal trees.}
+
+\item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
 }
 \value{
 A list with

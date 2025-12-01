@@ -12,7 +12,8 @@ ba_decay_long(
   ba,
   r,
   exponential_normal = FALSE,
-  edge_correction = c("none", "safe")
+  edge_correction = c("none", "safe"),
+  bounds = NULL
 )
 }
 \arguments{
@@ -31,6 +32,9 @@ ba_decay_long(
 \item{exponential_normal}{Logical passed to `ba_decay`.}
 
 \item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option.}
+
+\item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
 }
 \value{
 A data frame with `tree_id`, `species`, `mu`, `con_ba`, and `total_ba`.

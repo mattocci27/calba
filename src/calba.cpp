@@ -10,6 +10,14 @@ struct RadiusEntry {
   int index;
 };
 
+struct Bounds {
+  bool has_bounds;
+  double xmin;
+  double xmax;
+  double ymin;
+  double ymax;
+};
+
 struct SpatialGrid {
   double xmin;
   double ymin;
@@ -62,29 +70,80 @@ inline int compute_cell_id(const SpatialGrid& grid, double x, double y) {
   return cy * grid.nx + cx;
 }
 
-SpatialGrid build_spatial_grid(const NumericVector& gx, const NumericVector& gy, double radius) {
+Bounds parse_bounds(Nullable<NumericVector> bounds) {
+  Bounds res{false, 0.0, 0.0, 0.0, 0.0};
+  if (bounds.isNull()) {
+    return res;
+  }
+  NumericVector b(bounds);
+  if (b.size() != 4) {
+    stop("`bounds` must be a numeric vector of length 4: xmin, xmax, ymin, ymax");
+  }
+  for (int i = 0; i < 4; ++i) {
+    if (!std::isfinite(b[i])) {
+      stop("`bounds` must contain only finite values");
+    }
+  }
+  double xmin = b[0];
+  double xmax = b[1];
+  double ymin = b[2];
+  double ymax = b[3];
+  if (!(xmin < xmax && ymin < ymax)) {
+    stop("`bounds` must satisfy xmin < xmax and ymin < ymax");
+  }
+  res.has_bounds = true;
+  res.xmin = xmin;
+  res.xmax = xmax;
+  res.ymin = ymin;
+  res.ymax = ymax;
+  return res;
+}
+
+void ensure_coords_within_bounds(const NumericVector& gx, const NumericVector& gy, const Bounds& bounds) {
+  if (!bounds.has_bounds) {
+    return;
+  }
+  R_xlen_t n = gx.size();
+  for (R_xlen_t i = 0; i < n; ++i) {
+    if (gx[i] < bounds.xmin || gx[i] > bounds.xmax || gy[i] < bounds.ymin || gy[i] > bounds.ymax) {
+      stop("All coordinates must lie within the provided `bounds`");
+    }
+  }
+}
+
+SpatialGrid build_spatial_grid(const NumericVector& gx, const NumericVector& gy, double radius,
+                               const Bounds& bounds) {
   int n = gx.size();
   SpatialGrid grid;
   grid.cell_size = radius;
   if (n == 0) {
-    grid.xmin = 0.0;
-    grid.ymin = 0.0;
+    grid.xmin = bounds.has_bounds ? bounds.xmin : 0.0;
+    grid.ymin = bounds.has_bounds ? bounds.ymin : 0.0;
+    grid.xmax = bounds.has_bounds ? bounds.xmax : 0.0;
+    grid.ymax = bounds.has_bounds ? bounds.ymax : 0.0;
     grid.nx = 1;
     grid.ny = 1;
     grid.cells.assign(1, std::vector<int>());
     grid.cell_ids.clear();
     return grid;
   }
-  grid.xmin = gx[0];
-  grid.ymin = gy[0];
-  double max_x = gx[0];
-  double max_y = gy[0];
+  if (bounds.has_bounds) {
+    grid.xmin = bounds.xmin;
+    grid.ymin = bounds.ymin;
+  } else {
+    grid.xmin = gx[0];
+    grid.ymin = gy[0];
+  }
+  double max_x = bounds.has_bounds ? bounds.xmax : gx[0];
+  double max_y = bounds.has_bounds ? bounds.ymax : gy[0];
 
   for (int i = 1; i < n; ++i) {
-    if (gx[i] < grid.xmin) grid.xmin = gx[i];
-    if (gx[i] > max_x) max_x = gx[i];
-    if (gy[i] < grid.ymin) grid.ymin = gy[i];
-    if (gy[i] > max_y) max_y = gy[i];
+    if (!bounds.has_bounds) {
+      if (gx[i] < grid.xmin) grid.xmin = gx[i];
+      if (gx[i] > max_x) max_x = gx[i];
+      if (gy[i] < grid.ymin) grid.ymin = gy[i];
+      if (gy[i] > max_y) max_y = gy[i];
+    }
   }
 
   grid.xmax = max_x;
@@ -152,13 +211,17 @@ void for_each_neighbor(const SpatialGrid& grid, int focal_idx, const NumericVect
 List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, NumericVector gy,
                                          NumericVector ba, NumericVector r_values,
                                          bool dist_weighted = false,
-                                         std::string edge_correction = "none") {
+                                         std::string edge_correction = "none",
+                                         Nullable<NumericVector> bounds = R_NilValue) {
   R_xlen_t n_focal = gx.size();
   R_xlen_t n_r = r_values.size();
 
   if (n_r == 0) {
     stop("`r_values` must contain at least one radius");
   }
+
+  Bounds parsed_bounds = parse_bounds(bounds);
+  ensure_coords_within_bounds(gx, gy, parsed_bounds);
 
   std::vector<RadiusEntry> radii;
   radii.reserve(static_cast<size_t>(n_r));
@@ -191,7 +254,7 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
     }
   };
 
-  SpatialGrid grid = build_spatial_grid(gx, gy, max_r);
+  SpatialGrid grid = build_spatial_grid(gx, gy, max_r, parsed_bounds);
   double max_r_sq = max_r * max_r;
 
   EdgeCorrection correction = parse_edge_correction(edge_correction);
@@ -238,12 +301,16 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
 // [[Rcpp::export]]
 List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy,
                                  NumericVector ba, double r, bool dist_weighted = false,
-                                 std::string edge_correction = "none") {
+                                 std::string edge_correction = "none",
+                                 Nullable<NumericVector> bounds = R_NilValue) {
   int n_focal = gx.size();
   NumericVector con_ba(n_focal, 0.0);
   NumericVector total_ba(n_focal, 0.0);
 
-  SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  Bounds parsed_bounds = parse_bounds(bounds);
+  ensure_coords_within_bounds(gx, gy, parsed_bounds);
+
+  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
   double max_radius_sq = r * r;
 
   EdgeCorrection correction = parse_edge_correction(edge_correction);
@@ -279,7 +346,8 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
 // [[Rcpp::export]]
 List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx,
                                 NumericVector gy, NumericVector ba, double r, std::string decay_type,
-                                std::string edge_correction = "none") {
+                                std::string edge_correction = "none",
+                                Nullable<NumericVector> bounds = R_NilValue) {
   int n_focal = gx.size();
   int n_mu = mu_values.size();
   NumericMatrix con_ba_matrix(n_focal, n_mu);
@@ -307,7 +375,10 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
   }
 
   double r_sq = r * r;
-  SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  Bounds parsed_bounds = parse_bounds(bounds);
+  ensure_coords_within_bounds(gx, gy, parsed_bounds);
+
+  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
   EdgeCorrection correction = parse_edge_correction(edge_correction);
   bool require_safe = (correction == EdgeCorrection::Safe);
   double na_value = NA_REAL;
@@ -360,11 +431,15 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
 
 // [[Rcpp::export]]
 NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
-                             std::string edge_correction = "none") {
+                             std::string edge_correction = "none",
+                             Nullable<NumericVector> bounds = R_NilValue) {
   int n = gx.size();
   NumericVector res(n);
 
-  SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  Bounds parsed_bounds = parse_bounds(bounds);
+  ensure_coords_within_bounds(gx, gy, parsed_bounds);
+
+  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
   double max_radius_sq = r * r;
   EdgeCorrection correction = parse_edge_correction(edge_correction);
   bool require_safe = (correction == EdgeCorrection::Safe);
@@ -393,11 +468,15 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
 
 // [[Rcpp::export]]
 NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r,
-                           std::string edge_correction = "none") {
+                           std::string edge_correction = "none",
+                           Nullable<NumericVector> bounds = R_NilValue) {
   int n = sp.size();
   NumericVector res(n);
 
-  SpatialGrid grid = build_spatial_grid(gx, gy, r);
+  Bounds parsed_bounds = parse_bounds(bounds);
+  ensure_coords_within_bounds(gx, gy, parsed_bounds);
+
+  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
   double max_radius_sq = r * r;
   EdgeCorrection correction = parse_edge_correction(edge_correction);
   bool require_safe = (correction == EdgeCorrection::Safe);

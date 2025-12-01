@@ -4,7 +4,7 @@
 \alias{count_total}
 \title{Count Total Trees}
 \usage{
-count_total(gx, gy, r, edge_correction = c("none", "safe"))
+count_total(gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL)
 }
 \arguments{
 \item{gx}{A numeric vector of x-coordinates for the trees.}
@@ -14,6 +14,9 @@ count_total(gx, gy, r, edge_correction = c("none", "safe"))
 \item{r}{A numeric scalar for the radius parameter.}
 
 \item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option that skips focal trees close to the edges.}
+
+\item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
 }
 \value{
 A numeric vector containing the count of all trees within the radius for each focal tree.

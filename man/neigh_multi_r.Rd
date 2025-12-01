@@ -11,7 +11,8 @@ neigh_multi_r(
   ba,
   r_values,
   dist_weighted = FALSE,
-  edge_correction = c("none", "safe")
+  edge_correction = c("none", "safe"),
+  bounds = NULL
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ neigh_multi_r(
 \item{dist_weighted}{Logical flag to use `ba / dist` weighting within each radius.}
 
 \item{edge_correction}{Character; see `ba_simple()` for the `"safe"` option.}
+
+\item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
 }
 \value{
 A tidy tibble with `tree_id`, `species`, `radius`, `con_ba`, `total_ba`,

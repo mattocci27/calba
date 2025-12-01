@@ -72,3 +72,28 @@ validate_r_values <- function(r_values) {
   }
   r_values
 }
+
+## Optional user-supplied plot bounds: NULL or c(xmin, xmax, ymin, ymax).
+## Ensures inputs are finite, ordered, and cover all coordinates.
+validate_bounds <- function(bounds, gx, gy) {
+  if (is.null(bounds)) {
+    return(NULL)
+  }
+  if (!is.numeric(bounds) || length(bounds) != 4) {
+    stop("`bounds` must be a numeric vector of length 4: xmin, xmax, ymin, ymax", call. = FALSE)
+  }
+  if (any(!is.finite(bounds))) {
+    stop("`bounds` must be finite", call. = FALSE)
+  }
+  xmin <- bounds[[1]]
+  xmax <- bounds[[2]]
+  ymin <- bounds[[3]]
+  ymax <- bounds[[4]]
+  if (!(xmin < xmax && ymin < ymax)) {
+    stop("`bounds` must satisfy xmin < xmax and ymin < ymax", call. = FALSE)
+  }
+  if (any(gx < xmin | gx > xmax | gy < ymin | gy > ymax)) {
+    stop("All coordinates must fall within `bounds`", call. = FALSE)
+  }
+  bounds
+}

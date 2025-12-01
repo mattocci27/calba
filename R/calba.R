@@ -15,7 +15,9 @@
 #' @param edge_correction Character. Use `"none"` (default) to return all focal trees or `"safe"`
 #'   to skip neighborhood calculations for trees within `r` of the plot edges and mark their output
 #'   as `NA`.
-#'
+#' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+#'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' 
 #' @return A list with two numeric vectors:
 #' \describe{
 #'   \item{`con_ba`}{A numeric vector representing the cumulative basal area of conspecific trees within the radius.}
@@ -60,17 +62,20 @@
 #' @import Rcpp
 #' @export
 ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
-                      edge_correction = c("none", "safe")) {
+                      edge_correction = c("none", "safe"),
+                      bounds = NULL) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
+  bounds <- validate_bounds(bounds, gx, gy)
 
   edge_correction <- match.arg(edge_correction)
 
   calculate_basal_area_simple(
     sp, gx, gy, ba, r,
     dist_weighted = dist_weighted,
-    edge_correction = edge_correction
+    edge_correction = edge_correction,
+    bounds = bounds
   )
 }
 
@@ -89,6 +94,8 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
 #' @param exponential_normal A logical value. If `FALSE` (default), use exponential decay.
 #' If `TRUE`, use exponential-normal decay.
 #' @param edge_correction Character. See `ba_simple()` for the `"safe"` behavior that skips edge trees.
+#' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+#'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
 #'
 #' @return A list with two matrices:
 #' \describe{
@@ -124,18 +131,21 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
 #'
 #' @export
 ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
-                     edge_correction = c("none", "safe")) {
+                     edge_correction = c("none", "safe"),
+                     bounds = NULL) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
   mu_values <- validate_mu_values(mu_values)
+  bounds <- validate_bounds(bounds, gx, gy)
 
   edge_correction <- match.arg(edge_correction)
 
   decay_type <- if (exponential_normal) "exponential-normal" else "exponential"
   calculate_basal_area_decay(
     mu_values, sp, gx, gy, ba, r, decay_type,
-    edge_correction = edge_correction
+    edge_correction = edge_correction,
+    bounds = bounds
   )
 }
 
@@ -150,6 +160,8 @@ ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
 #' 
 #' @return A numeric vector containing the count of conspecific trees within the radius for each focal tree.
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option that skips focal trees near the boundary.
+#' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+#'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
 #'
 #' @examples
 #' sample_data <- data.frame(
@@ -165,13 +177,16 @@ ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
 #' )
 #'
 #' @export
-count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe")) {
+count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
+  bounds <- validate_bounds(bounds, gx, gy)
 
   edge_correction <- match.arg(edge_correction)
 
-  count_con_cpp(sp, gx, gy, r, edge_correction = edge_correction)
+  count_con_cpp(sp, gx, gy, r,
+                edge_correction = edge_correction,
+                bounds = bounds)
 }
 
 #' Count Total Trees
@@ -184,6 +199,8 @@ count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe")) {
 #' 
 #' @return A numeric vector containing the count of all trees within the radius for each focal tree.
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option that skips focal trees close to the edges.
+#' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+#'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
 #'
 #' @examples
 #' sample_data <- data.frame(
@@ -197,11 +214,14 @@ count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe")) {
 #' )
 #'
 #' @export
-count_total <- function(gx, gy, r, edge_correction = c("none", "safe")) {
+count_total <- function(gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL) {
   validate_xy(gx, gy, r)
+  bounds <- validate_bounds(bounds, gx, gy)
 
   edge_correction <- match.arg(edge_correction)
-  count_total_cpp(gx, gy, r, edge_correction = edge_correction)
+  count_total_cpp(gx, gy, r,
+                  edge_correction = edge_correction,
+                  bounds = bounds)
 }
 
 #' Neighborhood summaries for basal area and counts
@@ -218,6 +238,8 @@ count_total <- function(gx, gy, r, edge_correction = c("none", "safe")) {
 #' @param dist_weighted Logical flag passed to `ba_simple` to use a simple `ba / dist` weighting when `TRUE`.
 #' @param exponential_normal Logical passed to `ba_decay` to select the exponential-normal kernel.
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option that skips edge focal trees.
+#' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+#'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
 #'
 #' @return A list with
 #' * `summary`: data frame with `tree_id`, `species`, `con_ba`, `total_ba`, `con_count`, `total_count`.
@@ -247,10 +269,12 @@ neigh_ba <- function(sp, gx, gy, ba, r,
                      mu_values = NULL,
                      dist_weighted = FALSE,
                      exponential_normal = FALSE,
-                     edge_correction = c("none", "safe")) {
+                     edge_correction = c("none", "safe"),
+                     bounds = NULL) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
+  bounds <- validate_bounds(bounds, gx, gy)
   edge_correction <- match.arg(edge_correction)
   if (!is.null(mu_values)) {
     mu_values <- validate_mu_values(mu_values)
@@ -259,15 +283,16 @@ neigh_ba <- function(sp, gx, gy, ba, r,
   ba_out <- ba_simple(
     sp, gx, gy, ba, r,
     dist_weighted = dist_weighted,
-    edge_correction = edge_correction
+    edge_correction = edge_correction,
+    bounds = bounds
   )
   summary_tbl <- data.frame(
     tree_id = seq_len(length(gx)),
     species = sp,
     con_ba = ba_out$con_ba,
     total_ba = ba_out$total_ba,
-    con_count = count_con(sp, gx, gy, r, edge_correction = edge_correction),
-    total_count = count_total(gx, gy, r, edge_correction = edge_correction),
+    con_count = count_con(sp, gx, gy, r, edge_correction = edge_correction, bounds = bounds),
+    total_count = count_total(gx, gy, r, edge_correction = edge_correction, bounds = bounds),
     row.names = NULL,
     stringsAsFactors = FALSE
   )
@@ -284,7 +309,8 @@ neigh_ba <- function(sp, gx, gy, ba, r,
       ba = ba,
       r = r,
       exponential_normal = exponential_normal,
-      edge_correction = edge_correction
+      edge_correction = edge_correction,
+      bounds = bounds
     )
   }
 
@@ -305,6 +331,8 @@ neigh_ba <- function(sp, gx, gy, ba, r,
 #' @param r_values Numeric vector of radii to evaluate.
 #' @param dist_weighted Logical flag to use `ba / dist` weighting within each radius.
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option.
+#' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+#'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
 #'
 #' @return A tidy tibble with `tree_id`, `species`, `radius`, `con_ba`, `total_ba`,
 #' `con_count`, `total_count`, `prop_con_ba`, `het_ba`, `het_count`, and
@@ -329,19 +357,22 @@ neigh_ba <- function(sp, gx, gy, ba, r,
 #' @rdname neigh_multi_r
 #' @export
 neigh_multi_r <- function(sp, gx, gy, ba, r_values, dist_weighted = FALSE,
-                          edge_correction = c("none", "safe")) {
+                          edge_correction = c("none", "safe"),
+                          bounds = NULL) {
   r_values <- validate_r_values(r_values)
   max_r <- max(r_values)
 
   validate_xy(gx, gy, max_r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
+  bounds <- validate_bounds(bounds, gx, gy)
 
   edge_correction <- match.arg(edge_correction)
   res <- calculate_neighborhood_multi_radius(
     sp, gx, gy, ba, r_values,
     dist_weighted = dist_weighted,
-    edge_correction = edge_correction
+    edge_correction = edge_correction,
+    bounds = bounds
   )
 
   n <- length(gx)
@@ -396,16 +427,20 @@ add_derived_neighborhood_metrics <- function(summary_tbl) {
 #' @param r Positive radius threshold.
 #' @param exponential_normal Logical passed to `ba_decay`.
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option.
+#' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+#'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
 #'
 #' @return A data frame with `tree_id`, `species`, `mu`, `con_ba`, and `total_ba`.
 #'
 #' @export
 ba_decay_long <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
-                          edge_correction = c("none", "safe")) {
+                          edge_correction = c("none", "safe"),
+                          bounds = NULL) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
   mu_values <- validate_mu_values(mu_values)
+  bounds <- validate_bounds(bounds, gx, gy)
 
   edge_correction <- match.arg(edge_correction)
 
@@ -417,7 +452,8 @@ ba_decay_long <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FAL
     ba = ba,
     r = r,
     exponential_normal = exponential_normal,
-    edge_correction = edge_correction
+    edge_correction = edge_correction,
+    bounds = bounds
   )
 
   n <- length(gx)

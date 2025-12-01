@@ -11,7 +11,8 @@ ba_simple(
   ba,
   r,
   dist_weighted = FALSE,
-  edge_correction = c("none", "safe")
+  edge_correction = c("none", "safe"),
+  bounds = NULL
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ if `FALSE`, use the unadjusted `ba`.}
 \item{edge_correction}{Character. Use `"none"` (default) to return all focal trees or `"safe"`
 to skip neighborhood calculations for trees within `r` of the plot edges and mark their output
 as `NA`.}
+
+\item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
+When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
 }
 \value{
 A list with two numeric vectors:
