@@ -32,8 +32,8 @@ Packages such as `siplab` and `forestecology` can compute neighborhood competiti
 
 ## Usage
 
-Install the development version with `remotes::install_github("mattocci27/calba")`.  
-`neigh_ba()` is the primary interface for computing conspecific and total basal area, neighbor counts, and decay-based summaries in a single call.  
+Install the development version with `remotes::install_github("mattocci27/calba")`.
+`neigh_ba()` is the primary interface for computing conspecific and total basal area, neighbor counts, and decay-based summaries in a single call.
 The function returns a tidy data frame that can be used directly in regression and mixed-effects models.
 
 ```r
