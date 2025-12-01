@@ -3,7 +3,7 @@ Title: Efficient Neighborhood Basal Area Metrics for Trees
 Version: 0.1.0
 Authors@R:
     person("Masatoshi", "Katabuchi", email = "mattocci27@gmail.com", role = c("aut", "cre"))
-Description: Provides fast C++-backed functions to compute conspecific and total neighborhood basal area for every tree in mapped forest plots. Supports unweighted and distance-weighted neighborhoods, multiple radii, and alternative decay kernels (exponential and exponential-normal), along with simple edge-correction options. The resulting neighborhood metrics are designed as model-ready covariates for competition, growth, and survival models in forest dynamics and spatial ecology studies, and integrate naturally with standard R modeling workflows.
+Description: Fast C++-backed tools for computing conspecific and total neighborhood basal area in mapped forest plots. Includes unweighted and distance-weighted neighborhoods, multiple radii, decay kernels, and basic edge correction. Outputs are model-ready covariates for forest competition, growth, and survival models.
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
