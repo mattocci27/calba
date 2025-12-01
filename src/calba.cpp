@@ -30,6 +30,11 @@ struct SpatialGrid {
   std::vector<int> cell_ids;
 };
 
+struct GridContext {
+  SpatialGrid grid;
+  bool require_safe;
+};
+
 enum class EdgeCorrection {
   None,
   Safe
@@ -177,6 +182,18 @@ SpatialGrid build_spatial_grid(const NumericVector& gx, const NumericVector& gy,
   return grid;
 }
 
+GridContext make_grid_context(const NumericVector& gx, const NumericVector& gy, double radius,
+                              const std::string& edge_correction,
+                              const Nullable<NumericVector>& bounds) {
+  Bounds parsed_bounds = parse_bounds(bounds);
+  ensure_coords_within_bounds(gx, gy, parsed_bounds);
+  SpatialGrid grid = build_spatial_grid(gx, gy, radius, parsed_bounds);
+  EdgeCorrection correction = parse_edge_correction(edge_correction);
+  bool require_safe = (correction == EdgeCorrection::Safe);
+  GridContext ctx{grid, require_safe};
+  return ctx;
+}
+
 template <typename Func>
 void for_each_neighbor(const SpatialGrid& grid, int focal_idx, const NumericVector& gx,
                        const NumericVector& gy, double max_radius_sq, Func&& func) {
@@ -220,9 +237,6 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
     stop("`r_values` must contain at least one radius");
   }
 
-  Bounds parsed_bounds = parse_bounds(bounds);
-  ensure_coords_within_bounds(gx, gy, parsed_bounds);
-
   std::vector<RadiusEntry> radii;
   radii.reserve(static_cast<size_t>(n_r));
   for (R_xlen_t k = 0; k < n_r; ++k) {
@@ -238,6 +252,10 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
   });
 
   double max_r = radii.back().radius;
+  GridContext ctx = make_grid_context(gx, gy, max_r, edge_correction, bounds);
+  const SpatialGrid& grid = ctx.grid;
+  bool require_safe = ctx.require_safe;
+  double na_value = NA_REAL;
 
   NumericMatrix con_ba(n_focal, n_r);
   NumericMatrix total_ba(n_focal, n_r);
@@ -254,27 +272,29 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
     }
   };
 
-  SpatialGrid grid = build_spatial_grid(gx, gy, max_r, parsed_bounds);
   double max_r_sq = max_r * max_r;
-
-  EdgeCorrection correction = parse_edge_correction(edge_correction);
-  bool require_safe = (correction == EdgeCorrection::Safe);
-  double na_value = NA_REAL;
 
   auto comparator = [](const RadiusEntry& entry, double value) {
     return entry.radius < value;
   };
 
+  auto is_safe = [&](R_xlen_t idx) {
+    return is_safe_focal(gx[idx], gy[idx], max_r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+  };
+
+  auto mark_row_na = [&](R_xlen_t row) {
+    for (int col = 0; col < n_r; ++col) {
+      con_ba(row, col) = na_value;
+      total_ba(row, col) = na_value;
+      con_count(row, col) = na_value;
+      total_count(row, col) = na_value;
+    }
+  };
+
   for (R_xlen_t i = 0; i < n_focal; ++i) {
     String target_sp = sp[i];
-    bool safe = is_safe_focal(gx[i], gy[i], max_r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
-    if (require_safe && !safe) {
-      for (int col = 0; col < n_r; ++col) {
-        con_ba(i, col) = na_value;
-        total_ba(i, col) = na_value;
-        con_count(i, col) = na_value;
-        total_count(i, col) = na_value;
-      }
+    if (require_safe && !is_safe(i)) {
+      mark_row_na(i);
       continue;
     }
     for_each_neighbor(grid, i, gx, gy, max_r_sq, [&](int j, double dist, double /*dist_sq*/) {
@@ -307,19 +327,18 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
   NumericVector con_ba(n_focal, 0.0);
   NumericVector total_ba(n_focal, 0.0);
 
-  Bounds parsed_bounds = parse_bounds(bounds);
-  ensure_coords_within_bounds(gx, gy, parsed_bounds);
-
-  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
+  GridContext ctx = make_grid_context(gx, gy, r, edge_correction, bounds);
+  const SpatialGrid& grid = ctx.grid;
   double max_radius_sq = r * r;
-
-  EdgeCorrection correction = parse_edge_correction(edge_correction);
-  bool require_safe = (correction == EdgeCorrection::Safe);
+  bool require_safe = ctx.require_safe;
   double na_value = NA_REAL;
 
+  auto is_safe = [&](int idx) {
+    return is_safe_focal(gx[idx], gy[idx], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+  };
+
   for (int i = 0; i < n_focal; ++i) {
-    bool safe = is_safe_focal(gx[i], gy[i], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
-    if (require_safe && !safe) {
+    if (require_safe && !is_safe(i)) {
       con_ba[i] = na_value;
       total_ba[i] = na_value;
       continue;
@@ -375,17 +394,18 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
   }
 
   double r_sq = r * r;
-  Bounds parsed_bounds = parse_bounds(bounds);
-  ensure_coords_within_bounds(gx, gy, parsed_bounds);
-
-  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
-  EdgeCorrection correction = parse_edge_correction(edge_correction);
-  bool require_safe = (correction == EdgeCorrection::Safe);
+  GridContext ctx = make_grid_context(gx, gy, r, edge_correction, bounds);
+  const SpatialGrid& grid = ctx.grid;
+  bool require_safe = ctx.require_safe;
   double na_value = NA_REAL;
+
+  auto is_safe = [&](int idx) {
+    return is_safe_focal(gx[idx], gy[idx], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+  };
 
   for (int i = 0; i < n_focal; ++i) {
     double ba_i = ba[i];
-    bool safe_i = is_safe_focal(gx[i], gy[i], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+    bool safe_i = is_safe(i);
     if (require_safe && !safe_i) {
       for (int m = 0; m < n_mu; ++m) {
         con_ba_matrix(i, m) = na_value;
@@ -436,22 +456,20 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
   int n = gx.size();
   NumericVector res(n);
 
-  Bounds parsed_bounds = parse_bounds(bounds);
-  ensure_coords_within_bounds(gx, gy, parsed_bounds);
-
-  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
+  GridContext ctx = make_grid_context(gx, gy, r, edge_correction, bounds);
+  const SpatialGrid& grid = ctx.grid;
   double max_radius_sq = r * r;
-  EdgeCorrection correction = parse_edge_correction(edge_correction);
-  bool require_safe = (correction == EdgeCorrection::Safe);
+  bool require_safe = ctx.require_safe;
   double na_value = NA_REAL;
 
+  auto is_safe = [&](int idx) {
+    return is_safe_focal(gx[idx], gy[idx], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+  };
+
   for (int j = 0; j < n; ++j) {
-    if (require_safe) {
-      bool safe = is_safe_focal(gx[j], gy[j], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
-      if (!safe) {
-        res[j] = na_value;
-        continue;
-      }
+    if (require_safe && !is_safe(j)) {
+      res[j] = na_value;
+      continue;
     }
     int trees = 0;
     for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int /*i*/, double /*dist*/, double dist_sq) {
@@ -473,24 +491,22 @@ NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy,
   int n = sp.size();
   NumericVector res(n);
 
-  Bounds parsed_bounds = parse_bounds(bounds);
-  ensure_coords_within_bounds(gx, gy, parsed_bounds);
-
-  SpatialGrid grid = build_spatial_grid(gx, gy, r, parsed_bounds);
+  GridContext ctx = make_grid_context(gx, gy, r, edge_correction, bounds);
+  const SpatialGrid& grid = ctx.grid;
   double max_radius_sq = r * r;
-  EdgeCorrection correction = parse_edge_correction(edge_correction);
-  bool require_safe = (correction == EdgeCorrection::Safe);
+  bool require_safe = ctx.require_safe;
   double na_value = NA_REAL;
+
+  auto is_safe = [&](int idx) {
+    return is_safe_focal(gx[idx], gy[idx], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
+  };
 
   for (int j = 0; j < n; ++j) {
     int trees = 0;
     String target_sp = sp[j];
-    if (require_safe) {
-      bool safe = is_safe_focal(gx[j], gy[j], r, grid.xmin, grid.xmax, grid.ymin, grid.ymax);
-      if (!safe) {
-        res[j] = na_value;
-        continue;
-      }
+    if (require_safe && !is_safe(j)) {
+      res[j] = na_value;
+      continue;
     }
     for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int i, double /*dist*/, double dist_sq) {
       if (dist_sq <= 0.0) {
