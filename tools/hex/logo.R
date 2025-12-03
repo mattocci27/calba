@@ -170,6 +170,6 @@ sticker(
   h_color   = col_border,
   white_around_sticker = TRUE,
   dpi       = 600,
-  filename  = "man/figures/calba_hex.png"
+  filename  = "man/figures/icon.png"
 )
 
