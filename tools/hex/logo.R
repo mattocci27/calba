@@ -168,7 +168,7 @@ sticker(
   h_size    = h_size,
   h_fill    = col_bg_hex,
   h_color   = col_border,
-  white_around_sticker = TRUE,
+  white_around_sticker = FALSE,
   dpi       = 600,
   filename  = "man/figures/icon.png"
 )
