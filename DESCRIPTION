@@ -1,10 +1,10 @@
 Package: calba
 Title: Efficient Neighborhood Basal Area Metrics for Trees
-Version: 0.1.0
+Version: 0.1.1
 Authors@R:
     person("Masatoshi", "Katabuchi", email = "mattocci27@gmail.com", role = c("aut", "cre"))
-Description: Fast C++-backed tools for computing conspecific and total neighborhood basal area in mapped forest plots. Includes unweighted and distance-weighted neighborhoods, multiple radii, decay kernels, and basic edge correction. Outputs are model-ready covariates for forest competition, growth, and survival models.
-License: GPL-3 | file LICENSE
+Description: Fast C++-backed tools for computing conspecific and total neighborhood basal area in mapped forest plots. Includes unweighted and distance-weighted neighborhoods, multiple radii, decay kernels, and basic edge correction. Outputs are model-ready covariates for forest competition, growth, and survival models, following neighborhood modeling workflows commonly used in spatial ecology (e.g., H{\"u}lsmann et al. 2024 <doi:10.1038/s41586-024-07118-4>).
+License: GPL-3
 BugReports: https://github.com/mattocci27/calba/issues
 Encoding: UTF-8
 LazyData: true
