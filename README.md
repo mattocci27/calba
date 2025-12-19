@@ -1,4 +1,4 @@
-# calba: Efficient neighborhood basal area metrics for trees
+# calba: Efficient neighborhood basal area metrics for trees  <img src="man/figures/icon.png" width = "200" align="right" />
 
 `calba` stands for *Calculate Basal Area for Trees*.
 It provides fast, Rcpp-backed routines to generate conspecific and total neighborhood basal area metrics for every stem in a mapped forest plot.
