@@ -11,8 +11,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // calculate_neighborhood_multi_radius
-List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, NumericVector r_values, bool dist_weighted, std::string edge_correction, Nullable<NumericVector> bounds);
-RcppExport SEXP _calba_calculate_neighborhood_multi_radius(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP r_valuesSEXP, SEXP dist_weightedSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP) {
+List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, NumericVector r_values, bool dist_weighted, std::string edge_correction, Nullable<NumericVector> bounds, std::string zero_distance);
+RcppExport SEXP _calba_calculate_neighborhood_multi_radius(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP r_valuesSEXP, SEXP dist_weightedSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP, SEXP zero_distanceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -24,13 +24,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type dist_weighted(dist_weightedSEXP);
     Rcpp::traits::input_parameter< std::string >::type edge_correction(edge_correctionSEXP);
     Rcpp::traits::input_parameter< Nullable<NumericVector> >::type bounds(boundsSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_neighborhood_multi_radius(sp, gx, gy, ba, r_values, dist_weighted, edge_correction, bounds));
+    Rcpp::traits::input_parameter< std::string >::type zero_distance(zero_distanceSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_neighborhood_multi_radius(sp, gx, gy, ba, r_values, dist_weighted, edge_correction, bounds, zero_distance));
     return rcpp_result_gen;
 END_RCPP
 }
 // calculate_basal_area_simple
-List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r, bool dist_weighted, std::string edge_correction, Nullable<NumericVector> bounds);
-RcppExport SEXP _calba_calculate_basal_area_simple(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP, SEXP dist_weightedSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP) {
+List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r, bool dist_weighted, std::string edge_correction, Nullable<NumericVector> bounds, std::string zero_distance);
+RcppExport SEXP _calba_calculate_basal_area_simple(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP, SEXP dist_weightedSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP, SEXP zero_distanceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -42,13 +43,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type dist_weighted(dist_weightedSEXP);
     Rcpp::traits::input_parameter< std::string >::type edge_correction(edge_correctionSEXP);
     Rcpp::traits::input_parameter< Nullable<NumericVector> >::type bounds(boundsSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_simple(sp, gx, gy, ba, r, dist_weighted, edge_correction, bounds));
+    Rcpp::traits::input_parameter< std::string >::type zero_distance(zero_distanceSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_simple(sp, gx, gy, ba, r, dist_weighted, edge_correction, bounds, zero_distance));
     return rcpp_result_gen;
 END_RCPP
 }
 // calculate_basal_area_decay
-List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r, std::string decay_type, std::string edge_correction, Nullable<NumericVector> bounds);
-RcppExport SEXP _calba_calculate_basal_area_decay(SEXP mu_valuesSEXP, SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP, SEXP decay_typeSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP) {
+List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx, NumericVector gy, NumericVector ba, double r, std::string decay_type, std::string edge_correction, Nullable<NumericVector> bounds, std::string zero_distance);
+RcppExport SEXP _calba_calculate_basal_area_decay(SEXP mu_valuesSEXP, SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP baSEXP, SEXP rSEXP, SEXP decay_typeSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP, SEXP zero_distanceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -61,13 +63,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type decay_type(decay_typeSEXP);
     Rcpp::traits::input_parameter< std::string >::type edge_correction(edge_correctionSEXP);
     Rcpp::traits::input_parameter< Nullable<NumericVector> >::type bounds(boundsSEXP);
-    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r, decay_type, edge_correction, bounds));
+    Rcpp::traits::input_parameter< std::string >::type zero_distance(zero_distanceSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_basal_area_decay(mu_values, sp, gx, gy, ba, r, decay_type, edge_correction, bounds, zero_distance));
     return rcpp_result_gen;
 END_RCPP
 }
 // count_total_cpp
-NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r, std::string edge_correction, Nullable<NumericVector> bounds);
-RcppExport SEXP _calba_count_total_cpp(SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP) {
+NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r, std::string edge_correction, Nullable<NumericVector> bounds, std::string zero_distance);
+RcppExport SEXP _calba_count_total_cpp(SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP, SEXP zero_distanceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -76,13 +79,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type r(rSEXP);
     Rcpp::traits::input_parameter< std::string >::type edge_correction(edge_correctionSEXP);
     Rcpp::traits::input_parameter< Nullable<NumericVector> >::type bounds(boundsSEXP);
-    rcpp_result_gen = Rcpp::wrap(count_total_cpp(gx, gy, r, edge_correction, bounds));
+    Rcpp::traits::input_parameter< std::string >::type zero_distance(zero_distanceSEXP);
+    rcpp_result_gen = Rcpp::wrap(count_total_cpp(gx, gy, r, edge_correction, bounds, zero_distance));
     return rcpp_result_gen;
 END_RCPP
 }
 // count_con_cpp
-NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r, std::string edge_correction, Nullable<NumericVector> bounds);
-RcppExport SEXP _calba_count_con_cpp(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP) {
+NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r, std::string edge_correction, Nullable<NumericVector> bounds, std::string zero_distance);
+RcppExport SEXP _calba_count_con_cpp(SEXP spSEXP, SEXP gxSEXP, SEXP gySEXP, SEXP rSEXP, SEXP edge_correctionSEXP, SEXP boundsSEXP, SEXP zero_distanceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -92,17 +96,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type r(rSEXP);
     Rcpp::traits::input_parameter< std::string >::type edge_correction(edge_correctionSEXP);
     Rcpp::traits::input_parameter< Nullable<NumericVector> >::type bounds(boundsSEXP);
-    rcpp_result_gen = Rcpp::wrap(count_con_cpp(sp, gx, gy, r, edge_correction, bounds));
+    Rcpp::traits::input_parameter< std::string >::type zero_distance(zero_distanceSEXP);
+    rcpp_result_gen = Rcpp::wrap(count_con_cpp(sp, gx, gy, r, edge_correction, bounds, zero_distance));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_calba_calculate_neighborhood_multi_radius", (DL_FUNC) &_calba_calculate_neighborhood_multi_radius, 8},
-    {"_calba_calculate_basal_area_simple", (DL_FUNC) &_calba_calculate_basal_area_simple, 8},
-    {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 9},
-    {"_calba_count_total_cpp", (DL_FUNC) &_calba_count_total_cpp, 5},
-    {"_calba_count_con_cpp", (DL_FUNC) &_calba_count_con_cpp, 6},
+    {"_calba_calculate_neighborhood_multi_radius", (DL_FUNC) &_calba_calculate_neighborhood_multi_radius, 9},
+    {"_calba_calculate_basal_area_simple", (DL_FUNC) &_calba_calculate_basal_area_simple, 9},
+    {"_calba_calculate_basal_area_decay", (DL_FUNC) &_calba_calculate_basal_area_decay, 10},
+    {"_calba_count_total_cpp", (DL_FUNC) &_calba_count_total_cpp, 6},
+    {"_calba_count_con_cpp", (DL_FUNC) &_calba_count_con_cpp, 7},
     {NULL, NULL, 0}
 };
 

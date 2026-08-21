@@ -40,6 +40,12 @@ enum class EdgeCorrection {
   Safe
 };
 
+enum class ZeroDistancePolicy {
+  Include,
+  Exclude,
+  Error
+};
+
 EdgeCorrection parse_edge_correction(const std::string& value) {
   if (value == "none") {
     return EdgeCorrection::None;
@@ -48,6 +54,36 @@ EdgeCorrection parse_edge_correction(const std::string& value) {
     return EdgeCorrection::Safe;
   }
   stop("`edge_correction` must be either 'none' or 'safe'");
+}
+
+ZeroDistancePolicy parse_zero_distance(const std::string& value) {
+  if (value == "include") {
+    return ZeroDistancePolicy::Include;
+  }
+  if (value == "exclude") {
+    return ZeroDistancePolicy::Exclude;
+  }
+  if (value == "error") {
+    return ZeroDistancePolicy::Error;
+  }
+  stop("`zero_distance` must be one of 'include', 'exclude', or 'error'");
+}
+
+inline bool skip_zero_distance(double dist_sq, ZeroDistancePolicy policy,
+                               bool undefined_if_included = false) {
+  if (dist_sq != 0.0) {
+    return false;
+  }
+  if (policy == ZeroDistancePolicy::Exclude) {
+    return true;
+  }
+  if (policy == ZeroDistancePolicy::Error) {
+    stop("Distinct records have identical coordinates; set `zero_distance` to 'include' or 'exclude'");
+  }
+  if (undefined_if_included) {
+    stop("`zero_distance = 'include'` is undefined for inverse-distance weighting; use 'exclude'");
+  }
+  return false;
 }
 
 inline bool is_safe_focal(double x, double y, double r,
@@ -229,7 +265,8 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
                                          NumericVector ba, NumericVector r_values,
                                          bool dist_weighted = false,
                                          std::string edge_correction = "none",
-                                         Nullable<NumericVector> bounds = R_NilValue) {
+                                         Nullable<NumericVector> bounds = R_NilValue,
+                                         std::string zero_distance = "error") {
   R_xlen_t n_focal = gx.size();
   R_xlen_t n_r = r_values.size();
 
@@ -255,6 +292,7 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
   GridContext ctx = make_grid_context(gx, gy, max_r, edge_correction, bounds);
   const SpatialGrid& grid = ctx.grid;
   bool require_safe = ctx.require_safe;
+  ZeroDistancePolicy zero_distance_policy = parse_zero_distance(zero_distance);
   double na_value = NA_REAL;
 
   NumericMatrix con_ba(n_focal, n_r);
@@ -297,8 +335,8 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
       mark_row_na(i);
       continue;
     }
-    for_each_neighbor(grid, i, gx, gy, max_r_sq, [&](int j, double dist, double /*dist_sq*/) {
-      if (dist <= 0) {
+    for_each_neighbor(grid, i, gx, gy, max_r_sq, [&](int j, double dist, double dist_sq) {
+      if (skip_zero_distance(dist_sq, zero_distance_policy, dist_weighted)) {
         return;
       }
       double contribution = dist_weighted ? ba[j] / dist : ba[j];
@@ -322,7 +360,8 @@ List calculate_neighborhood_multi_radius(StringVector sp, NumericVector gx, Nume
 List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVector gy,
                                  NumericVector ba, double r, bool dist_weighted = false,
                                  std::string edge_correction = "none",
-                                 Nullable<NumericVector> bounds = R_NilValue) {
+                                 Nullable<NumericVector> bounds = R_NilValue,
+                                 std::string zero_distance = "error") {
   int n_focal = gx.size();
   NumericVector con_ba(n_focal, 0.0);
   NumericVector total_ba(n_focal, 0.0);
@@ -331,6 +370,7 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
   const SpatialGrid& grid = ctx.grid;
   double max_radius_sq = r * r;
   bool require_safe = ctx.require_safe;
+  ZeroDistancePolicy zero_distance_policy = parse_zero_distance(zero_distance);
   double na_value = NA_REAL;
 
   auto is_safe = [&](int idx) {
@@ -344,8 +384,8 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
       continue;
     }
     String target_sp = sp[i];
-    for_each_neighbor(grid, i, gx, gy, max_radius_sq, [&](int j, double dist, double /*dist_sq*/) {
-      if (dist <= 0) {
+    for_each_neighbor(grid, i, gx, gy, max_radius_sq, [&](int j, double dist, double dist_sq) {
+      if (skip_zero_distance(dist_sq, zero_distance_policy, dist_weighted)) {
         return;
       }
       double contribution = dist_weighted ? ba[j] / dist : ba[j];
@@ -366,7 +406,8 @@ List calculate_basal_area_simple(StringVector sp, NumericVector gx, NumericVecto
 List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, NumericVector gx,
                                 NumericVector gy, NumericVector ba, double r, std::string decay_type,
                                 std::string edge_correction = "none",
-                                Nullable<NumericVector> bounds = R_NilValue) {
+                                Nullable<NumericVector> bounds = R_NilValue,
+                                std::string zero_distance = "error") {
   int n_focal = gx.size();
   int n_mu = mu_values.size();
   NumericMatrix con_ba_matrix(n_focal, n_mu);
@@ -397,6 +438,7 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
   GridContext ctx = make_grid_context(gx, gy, r, edge_correction, bounds);
   const SpatialGrid& grid = ctx.grid;
   bool require_safe = ctx.require_safe;
+  ZeroDistancePolicy zero_distance_policy = parse_zero_distance(zero_distance);
   double na_value = NA_REAL;
 
   auto is_safe = [&](int idx) {
@@ -413,7 +455,10 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
       }
     }
     for_each_neighbor(grid, i, gx, gy, r_sq, [&](int j, double dist, double dist_sq) {
-      if (j <= i || dist_sq <= 0) {
+      if (j <= i) {
+        return;
+      }
+      if (skip_zero_distance(dist_sq, zero_distance_policy)) {
         return;
       }
       double ba_j = ba[j];
@@ -452,7 +497,8 @@ List calculate_basal_area_decay(NumericVector mu_values, StringVector sp, Numeri
 // [[Rcpp::export]]
 NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
                              std::string edge_correction = "none",
-                             Nullable<NumericVector> bounds = R_NilValue) {
+                             Nullable<NumericVector> bounds = R_NilValue,
+                             std::string zero_distance = "error") {
   int n = gx.size();
   NumericVector res(n);
 
@@ -460,6 +506,7 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
   const SpatialGrid& grid = ctx.grid;
   double max_radius_sq = r * r;
   bool require_safe = ctx.require_safe;
+  ZeroDistancePolicy zero_distance_policy = parse_zero_distance(zero_distance);
   double na_value = NA_REAL;
 
   auto is_safe = [&](int idx) {
@@ -473,7 +520,7 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
     }
     int trees = 0;
     for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int /*i*/, double /*dist*/, double dist_sq) {
-      if (dist_sq <= 0.0) {
+      if (skip_zero_distance(dist_sq, zero_distance_policy)) {
         return;
       }
       trees++;
@@ -487,7 +534,8 @@ NumericVector count_total_cpp(NumericVector gx, NumericVector gy, double r,
 // [[Rcpp::export]]
 NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy, double r,
                            std::string edge_correction = "none",
-                           Nullable<NumericVector> bounds = R_NilValue) {
+                           Nullable<NumericVector> bounds = R_NilValue,
+                           std::string zero_distance = "error") {
   int n = sp.size();
   NumericVector res(n);
 
@@ -495,6 +543,7 @@ NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy,
   const SpatialGrid& grid = ctx.grid;
   double max_radius_sq = r * r;
   bool require_safe = ctx.require_safe;
+  ZeroDistancePolicy zero_distance_policy = parse_zero_distance(zero_distance);
   double na_value = NA_REAL;
 
   auto is_safe = [&](int idx) {
@@ -509,7 +558,7 @@ NumericVector count_con_cpp(StringVector sp, NumericVector gx, NumericVector gy,
       continue;
     }
     for_each_neighbor(grid, j, gx, gy, max_radius_sq, [&](int i, double /*dist*/, double dist_sq) {
-      if (dist_sq <= 0.0) {
+      if (skip_zero_distance(dist_sq, zero_distance_policy)) {
         return;
       }
       if (sp[i] == target_sp) {

@@ -4,7 +4,14 @@
 \alias{count_total}
 \title{Count Total Trees}
 \usage{
-count_total(gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL)
+count_total(
+  gx,
+  gy,
+  r,
+  edge_correction = c("none", "safe"),
+  bounds = NULL,
+  zero_distance = c("error", "include", "exclude")
+)
 }
 \arguments{
 \item{gx}{A numeric vector of x-coordinates for the trees.}
@@ -17,6 +24,9 @@ count_total(gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL)
 
 \item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
+
+\item{zero_distance}{Character. How to handle distinct records with identical coordinates:
+`"error"` (default), `"include"`, or `"exclude"`.}
 }
 \value{
 A numeric vector containing the count of all trees within the radius for each focal tree.

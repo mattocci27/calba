@@ -73,6 +73,11 @@ validate_r_values <- function(r_values) {
   r_values
 }
 
+## Zero-distance treatment is a modelling choice, not a neighbour-search rule.
+validate_zero_distance <- function(zero_distance) {
+  match.arg(zero_distance, c("error", "include", "exclude"))
+}
+
 ## Optional user-supplied plot bounds: NULL or c(xmin, xmax, ymin, ymax).
 ## Ensures inputs are finite, ordered, and cover all coordinates.
 validate_bounds <- function(bounds, gx, gy) {

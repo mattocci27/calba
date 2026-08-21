@@ -14,7 +14,8 @@ neigh_ba(
   dist_weighted = FALSE,
   exponential_normal = FALSE,
   edge_correction = c("none", "safe"),
-  bounds = NULL
+  bounds = NULL,
+  zero_distance = c("error", "include", "exclude")
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ neigh_ba(
 
 \item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
+
+\item{zero_distance}{Character. Passed to all component calculations; defaults to `"error"`.}
 }
 \value{
 A list with

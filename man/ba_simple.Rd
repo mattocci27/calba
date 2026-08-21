@@ -12,7 +12,8 @@ ba_simple(
   r,
   dist_weighted = FALSE,
   edge_correction = c("none", "safe"),
-  bounds = NULL
+  bounds = NULL,
+  zero_distance = c("error", "include", "exclude")
 )
 }
 \arguments{
@@ -36,6 +37,10 @@ as `NA`.}
 
 \item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
+
+\item{zero_distance}{Character. How to handle distinct records with identical coordinates:
+`"error"` (default) requests an explicit decision, `"include"` treats them as neighbours,
+and `"exclude"` omits their pair. `"include"` is not defined when `dist_weighted = TRUE`.}
 }
 \value{
 A list with two numeric vectors:

@@ -1,6 +1,8 @@
 library(testthat)
 
-brute_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
+brute_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
+                         zero_distance = c("include", "exclude")) {
+  zero_distance <- match.arg(zero_distance)
   n <- length(gx)
   con <- numeric(n)
   total <- numeric(n)
@@ -11,7 +13,10 @@ brute_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE) {
       dx <- gx[j] - gx[i]
       dy <- gy[j] - gy[i]
       dist <- sqrt(dx * dx + dy * dy)
-      if (dist <= 0 || dist > r) next
+      if (dist > r || (dist == 0 && zero_distance == "exclude")) next
+      if (dist == 0 && dist_weighted) {
+        stop("zero distance is undefined for inverse-distance weighting", call. = FALSE)
+      }
       contribution <- if (dist_weighted) ba[j] / dist else ba[j]
       total[i] <- total[i] + contribution
       if (sp[i] == sp[j]) {
@@ -45,7 +50,9 @@ brute_counts <- function(sp, gx, gy, r) {
   list(con_count = con, total_count = total)
 }
 
-brute_decay <- function(mu_values, sp, gx, gy, ba, r, decay_type) {
+brute_decay <- function(mu_values, sp, gx, gy, ba, r, decay_type,
+                        zero_distance = c("include", "exclude")) {
+  zero_distance <- match.arg(zero_distance)
   n <- length(gx)
   m <- length(mu_values)
   con_mat <- matrix(0, nrow = n, ncol = m)
@@ -64,7 +71,7 @@ brute_decay <- function(mu_values, sp, gx, gy, ba, r, decay_type) {
       dx <- gx[j] - gx[i]
       dy <- gy[j] - gy[i]
       dist <- sqrt(dx * dx + dy * dy)
-      if (dist <= 0 || dist > r) next
+      if (dist > r || (dist == 0 && zero_distance == "exclude")) next
       for (k in seq_len(m)) {
         mu <- mu_values[k]
         contribution <- kernel(ba[j], dist, mu)
@@ -126,6 +133,101 @@ test_that("count helpers match brute force counts", {
   brute_counts_res <- brute_counts(sample_sp, sample_coords$gx, sample_coords$gy, r = 3)
   expect_equal(res_counts$con, brute_counts_res$con_count)
   expect_equal(res_counts$total, brute_counts_res$total_count)
+})
+
+test_that("zero-distance policy is explicit and exponential kernels can include co-located stems", {
+  sp <- c("a", "a", "b")
+  gx <- c(0, 0, 1)
+  gy <- c(0, 0, 0)
+  ba <- c(1, 2, 3)
+  r <- 2
+
+  expect_error(
+    ba_decay(1, sp, gx, gy, ba, r),
+    "identical coordinates"
+  )
+  expect_error(
+    count_total(gx, gy, r),
+    "identical coordinates"
+  )
+
+  expected_simple <- list(con_ba = c(2, 1, 0), total_ba = c(5, 4, 3))
+  simple_include <- ba_simple(
+    sp, gx, gy, ba, r,
+    zero_distance = "include"
+  )
+  expect_equal(simple_include, expected_simple)
+  expect_equal(
+    count_con(sp, gx, gy, r, zero_distance = "include"),
+    c(1, 1, 0)
+  )
+  expect_equal(
+    count_total(gx, gy, r, zero_distance = "include"),
+    c(2, 2, 2)
+  )
+
+  exp_weight <- exp(-1 / 2)
+  expn_weight <- exp(-1 / 4)
+  expected_exp_total <- matrix(c(2 + 3 * exp_weight, 1 + 3 * exp_weight,
+                                  3 * exp_weight), ncol = 1)
+  expected_expn_total <- matrix(c(2 + 3 * expn_weight, 1 + 3 * expn_weight,
+                                   3 * expn_weight), ncol = 1)
+  expected_con <- matrix(c(2, 1, 0), ncol = 1)
+
+  exp_include <- ba_decay(2, sp, gx, gy, ba, r, zero_distance = "include")
+  expect_equal(exp_include$con_ba_matrix, expected_con)
+  expect_equal(exp_include$total_ba_matrix, expected_exp_total)
+
+  expn_include <- ba_decay(
+    2, sp, gx, gy, ba, r,
+    exponential_normal = TRUE,
+    zero_distance = "include"
+  )
+  expect_equal(expn_include$con_ba_matrix, expected_con)
+  expect_equal(expn_include$total_ba_matrix, expected_expn_total)
+
+  neighborhood_include <- neigh_ba(
+    sp, gx, gy, ba, r,
+    mu_values = 2,
+    zero_distance = "include"
+  )
+  expect_equal(neighborhood_include$summary$total_ba, expected_simple$total_ba)
+  expect_equal(neighborhood_include$decay$total_ba, as.vector(expected_exp_total))
+
+  multi_include <- neigh_multi_r(
+    sp, gx, gy, ba, r_values = r,
+    zero_distance = "include"
+  )
+  expect_equal(multi_include$total_ba, expected_simple$total_ba)
+
+  simple_exclude <- ba_simple(
+    sp, gx, gy, ba, r,
+    zero_distance = "exclude"
+  )
+  expect_equal(simple_exclude$total_ba, c(3, 3, 3))
+  expect_error(
+    ba_simple(sp, gx, gy, ba, r, dist_weighted = TRUE, zero_distance = "include"),
+    "undefined for inverse-distance weighting"
+  )
+})
+
+test_that("duplicate_coordinates reports but does not modify coordinate records", {
+  duplicates <- duplicate_coordinates(c(0, 0, 1, 2, 2), c(0, 0, 1, 2, 2))
+  expect_equal(
+    duplicates,
+    data.frame(
+      tree_id = c(1L, 2L, 4L, 5L),
+      gx = c(0, 0, 2, 2),
+      gy = c(0, 0, 2, 2),
+      coordinate_group = c(1L, 1L, 2L, 2L)
+    )
+  )
+  expect_equal(
+    duplicate_coordinates(c(0, 1), c(0, 1)),
+    data.frame(
+      tree_id = integer(), gx = numeric(), gy = numeric(), coordinate_group = integer()
+    )
+  )
 })
 
 test_that("edge radii behave as expected", {

@@ -17,6 +17,9 @@
 #'   as `NA`.
 #' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 #'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' @param zero_distance Character. How to handle distinct records with identical coordinates:
+#'   `"error"` (default) requests an explicit decision, `"include"` treats them as neighbours,
+#'   and `"exclude"` omits their pair. `"include"` is not defined when `dist_weighted = TRUE`.
 #' 
 #' @return A list with two numeric vectors:
 #' \describe{
@@ -63,11 +66,13 @@
 #' @export
 ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
                       edge_correction = c("none", "safe"),
-                      bounds = NULL) {
+                      bounds = NULL,
+                      zero_distance = c("error", "include", "exclude")) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
   bounds <- validate_bounds(bounds, gx, gy)
+  zero_distance <- validate_zero_distance(zero_distance)
 
   edge_correction <- match.arg(edge_correction)
 
@@ -75,7 +80,8 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
     sp, gx, gy, ba, r,
     dist_weighted = dist_weighted,
     edge_correction = edge_correction,
-    bounds = bounds
+    bounds = bounds,
+    zero_distance = zero_distance
   )
 }
 
@@ -96,6 +102,8 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
 #' @param edge_correction Character. See `ba_simple()` for the `"safe"` behavior that skips edge trees.
 #' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 #'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' @param zero_distance Character. How to handle distinct records with identical coordinates:
+#'   `"error"` (default), `"include"`, or `"exclude"`. Both decay kernels are defined at zero.
 #'
 #' @return A list with two matrices:
 #' \describe{
@@ -132,12 +140,14 @@ ba_simple <- function(sp, gx, gy, ba, r, dist_weighted = FALSE,
 #' @export
 ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
                      edge_correction = c("none", "safe"),
-                     bounds = NULL) {
+                     bounds = NULL,
+                     zero_distance = c("error", "include", "exclude")) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
   mu_values <- validate_mu_values(mu_values)
   bounds <- validate_bounds(bounds, gx, gy)
+  zero_distance <- validate_zero_distance(zero_distance)
 
   edge_correction <- match.arg(edge_correction)
 
@@ -145,7 +155,8 @@ ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
   calculate_basal_area_decay(
     mu_values, sp, gx, gy, ba, r, decay_type,
     edge_correction = edge_correction,
-    bounds = bounds
+    bounds = bounds,
+    zero_distance = zero_distance
   )
 }
 
@@ -162,6 +173,8 @@ ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option that skips focal trees near the boundary.
 #' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 #'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' @param zero_distance Character. How to handle distinct records with identical coordinates:
+#'   `"error"` (default), `"include"`, or `"exclude"`.
 #'
 #' @examples
 #' sample_data <- data.frame(
@@ -177,16 +190,19 @@ ba_decay <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
 #' )
 #'
 #' @export
-count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL) {
+count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL,
+                      zero_distance = c("error", "include", "exclude")) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   bounds <- validate_bounds(bounds, gx, gy)
+  zero_distance <- validate_zero_distance(zero_distance)
 
   edge_correction <- match.arg(edge_correction)
 
   count_con_cpp(sp, gx, gy, r,
                 edge_correction = edge_correction,
-                bounds = bounds)
+                bounds = bounds,
+                zero_distance = zero_distance)
 }
 
 #' Count Total Trees
@@ -201,6 +217,8 @@ count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe"), bounds
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option that skips focal trees close to the edges.
 #' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 #'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' @param zero_distance Character. How to handle distinct records with identical coordinates:
+#'   `"error"` (default), `"include"`, or `"exclude"`.
 #'
 #' @examples
 #' sample_data <- data.frame(
@@ -214,14 +232,17 @@ count_con <- function(sp, gx, gy, r, edge_correction = c("none", "safe"), bounds
 #' )
 #'
 #' @export
-count_total <- function(gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL) {
+count_total <- function(gx, gy, r, edge_correction = c("none", "safe"), bounds = NULL,
+                        zero_distance = c("error", "include", "exclude")) {
   validate_xy(gx, gy, r)
   bounds <- validate_bounds(bounds, gx, gy)
+  zero_distance <- validate_zero_distance(zero_distance)
 
   edge_correction <- match.arg(edge_correction)
   count_total_cpp(gx, gy, r,
                   edge_correction = edge_correction,
-                  bounds = bounds)
+                  bounds = bounds,
+                  zero_distance = zero_distance)
 }
 
 #' Neighborhood summaries for basal area and counts
@@ -240,6 +261,7 @@ count_total <- function(gx, gy, r, edge_correction = c("none", "safe"), bounds =
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option that skips edge focal trees.
 #' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 #'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' @param zero_distance Character. Passed to all component calculations; defaults to `"error"`.
 #'
 #' @return A list with
 #' * `summary`: data frame with `tree_id`, `species`, `con_ba`, `total_ba`, `con_count`, `total_count`.
@@ -270,11 +292,13 @@ neigh_ba <- function(sp, gx, gy, ba, r,
                      dist_weighted = FALSE,
                      exponential_normal = FALSE,
                      edge_correction = c("none", "safe"),
-                     bounds = NULL) {
+                     bounds = NULL,
+                     zero_distance = c("error", "include", "exclude")) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
   bounds <- validate_bounds(bounds, gx, gy)
+  zero_distance <- validate_zero_distance(zero_distance)
   edge_correction <- match.arg(edge_correction)
   if (!is.null(mu_values)) {
     mu_values <- validate_mu_values(mu_values)
@@ -284,15 +308,16 @@ neigh_ba <- function(sp, gx, gy, ba, r,
     sp, gx, gy, ba, r,
     dist_weighted = dist_weighted,
     edge_correction = edge_correction,
-    bounds = bounds
+    bounds = bounds,
+    zero_distance = zero_distance
   )
   summary_tbl <- data.frame(
     tree_id = seq_len(length(gx)),
     species = sp,
     con_ba = ba_out$con_ba,
     total_ba = ba_out$total_ba,
-    con_count = count_con(sp, gx, gy, r, edge_correction = edge_correction, bounds = bounds),
-    total_count = count_total(gx, gy, r, edge_correction = edge_correction, bounds = bounds),
+    con_count = count_con(sp, gx, gy, r, edge_correction = edge_correction, bounds = bounds, zero_distance = zero_distance),
+    total_count = count_total(gx, gy, r, edge_correction = edge_correction, bounds = bounds, zero_distance = zero_distance),
     row.names = NULL,
     stringsAsFactors = FALSE
   )
@@ -310,7 +335,8 @@ neigh_ba <- function(sp, gx, gy, ba, r,
       r = r,
       exponential_normal = exponential_normal,
       edge_correction = edge_correction,
-      bounds = bounds
+      bounds = bounds,
+      zero_distance = zero_distance
     )
   }
 
@@ -333,6 +359,8 @@ neigh_ba <- function(sp, gx, gy, ba, r,
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option.
 #' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 #'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' @param zero_distance Character. How to handle distinct records with identical coordinates:
+#'   `"error"` (default), `"include"`, or `"exclude"`.
 #'
 #' @return A tidy tibble with `tree_id`, `species`, `radius`, `con_ba`, `total_ba`,
 #' `con_count`, `total_count`, `prop_con_ba`, `het_ba`, `het_count`, and
@@ -358,7 +386,8 @@ neigh_ba <- function(sp, gx, gy, ba, r,
 #' @export
 neigh_multi_r <- function(sp, gx, gy, ba, r_values, dist_weighted = FALSE,
                           edge_correction = c("none", "safe"),
-                          bounds = NULL) {
+                          bounds = NULL,
+                          zero_distance = c("error", "include", "exclude")) {
   r_values <- validate_r_values(r_values)
   max_r <- max(r_values)
 
@@ -366,13 +395,15 @@ neigh_multi_r <- function(sp, gx, gy, ba, r_values, dist_weighted = FALSE,
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
   bounds <- validate_bounds(bounds, gx, gy)
+  zero_distance <- validate_zero_distance(zero_distance)
 
   edge_correction <- match.arg(edge_correction)
   res <- calculate_neighborhood_multi_radius(
     sp, gx, gy, ba, r_values,
     dist_weighted = dist_weighted,
     edge_correction = edge_correction,
-    bounds = bounds
+    bounds = bounds,
+    zero_distance = zero_distance
   )
 
   n <- length(gx)
@@ -429,18 +460,21 @@ add_derived_neighborhood_metrics <- function(summary_tbl) {
 #' @param edge_correction Character; see `ba_simple()` for the `"safe"` option.
 #' @param bounds Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 #'   When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.
+#' @param zero_distance Character. Passed to `ba_decay`; defaults to `"error"`.
 #'
 #' @return A data frame with `tree_id`, `species`, `mu`, `con_ba`, and `total_ba`.
 #'
 #' @export
 ba_decay_long <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FALSE,
                           edge_correction = c("none", "safe"),
-                          bounds = NULL) {
+                          bounds = NULL,
+                          zero_distance = c("error", "include", "exclude")) {
   validate_xy(gx, gy, r)
   sp <- validate_species(sp, length(gx))
   ba <- validate_ba(ba, length(gx))
   mu_values <- validate_mu_values(mu_values)
   bounds <- validate_bounds(bounds, gx, gy)
+  zero_distance <- validate_zero_distance(zero_distance)
 
   edge_correction <- match.arg(edge_correction)
 
@@ -453,7 +487,8 @@ ba_decay_long <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FAL
     r = r,
     exponential_normal = exponential_normal,
     edge_correction = edge_correction,
-    bounds = bounds
+    bounds = bounds,
+    zero_distance = zero_distance
   )
 
   n <- length(gx)
@@ -466,5 +501,48 @@ ba_decay_long <- function(mu_values, sp, gx, gy, ba, r, exponential_normal = FAL
     total_ba = as.vector(decay_res$total_ba_matrix),
     row.names = NULL,
     stringsAsFactors = FALSE
+  )
+}
+
+#' Find records with duplicate coordinates
+#'
+#' Return all records that share an exact `(gx, gy)` coordinate with another record.
+#' This is a diagnostic only: it never aggregates, removes, or otherwise changes records.
+#'
+#' @param gx Numeric x-coordinates.
+#' @param gy Numeric y-coordinates.
+#'
+#' @return A data frame with `tree_id`, `gx`, `gy`, and `coordinate_group`. It has zero rows
+#'   when every coordinate pair is unique.
+#'
+#' @export
+duplicate_coordinates <- function(gx, gy) {
+  if (!is.numeric(gx) || !is.numeric(gy) || length(gx) != length(gy)) {
+    stop("`gx` and `gy` must be numeric vectors of the same length", call. = FALSE)
+  }
+  if (any(!is.finite(gx)) || any(!is.finite(gy))) {
+    stop("`gx` and `gy` must contain only finite values", call. = FALSE)
+  }
+  if (length(gx) == 0L) {
+    return(data.frame(
+      tree_id = integer(), gx = numeric(), gy = numeric(), coordinate_group = integer()
+    ))
+  }
+
+  ordering <- order(gx, gy)
+  starts_group <- c(TRUE, gx[ordering][-1L] != gx[ordering][-length(ordering)] |
+    gy[ordering][-1L] != gy[ordering][-length(ordering)])
+  groups_ordered <- cumsum(starts_group)
+  group_sizes <- tabulate(groups_ordered)
+  is_duplicate <- group_sizes[groups_ordered] > 1L
+  duplicate_rows <- ordering[is_duplicate]
+  duplicate_groups <- groups_ordered[is_duplicate]
+
+  data.frame(
+    tree_id = duplicate_rows,
+    gx = gx[duplicate_rows],
+    gy = gy[duplicate_rows],
+    coordinate_group = match(duplicate_groups, unique(duplicate_groups)),
+    row.names = NULL
   )
 }

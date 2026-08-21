@@ -12,7 +12,8 @@ neigh_multi_r(
   r_values,
   dist_weighted = FALSE,
   edge_correction = c("none", "safe"),
-  bounds = NULL
+  bounds = NULL,
+  zero_distance = c("error", "include", "exclude")
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ neigh_multi_r(
 
 \item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
+
+\item{zero_distance}{Character. How to handle distinct records with identical coordinates:
+`"error"` (default), `"include"`, or `"exclude"`.}
 }
 \value{
 A tidy tibble with `tree_id`, `species`, `radius`, `con_ba`, `total_ba`,

@@ -13,7 +13,8 @@ ba_decay(
   r,
   exponential_normal = FALSE,
   edge_correction = c("none", "safe"),
-  bounds = NULL
+  bounds = NULL,
+  zero_distance = c("error", "include", "exclude")
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ If `TRUE`, use exponential-normal decay.}
 
 \item{bounds}{Optional numeric vector `c(xmin, xmax, ymin, ymax)` giving the plot extent.
 When `NULL`, the range of `gx`/`gy` is used; supply bounds if your data do not span the full plot.}
+
+\item{zero_distance}{Character. How to handle distinct records with identical coordinates:
+`"error"` (default), `"include"`, or `"exclude"`. Both decay kernels are defined at zero.}
 }
 \value{
 A list with two matrices:
